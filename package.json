@@ -72,6 +72,14 @@
   },
   "license": "MIT",
   "author": "Javier Mateos",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cabrasky/mailcanvas.git"
+  },
+  "homepage": "https://github.com/cabrasky/mailcanvas#readme",
+  "bugs": {
+    "url": "https://github.com/cabrasky/mailcanvas/issues"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
