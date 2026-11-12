@@ -15,10 +15,21 @@ const reactVersion=JSON.parse(await fs.readFile(path.join(reactRoot,'react/packa
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--config','examples/embedded/vite.config.ts','--host','127.0.0.1','--port',String(port),'--strictPort'],{windowsHide:true,stdio:['ignore','pipe','pipe']});
 let browser;
 try{
+  const startupLog=[];
+  const stripAnsi=text=>text.replace(/\x1b\[[0-9;]*m/g,'');
+  server.stdout.on('data',data=>startupLog.push(data.toString()));
+  server.stderr.on('data',data=>startupLog.push(data.toString()));
+  // Cold-starting Vite has to pre-bundle monaco-editor the first time, which can take well
+  // over 20s on a throttled CI runner even though it's fast on a warm local machine — a short
+  // timeout here just produces a flaky "No arrancó Vite." with no clue why.
+  const startupTimeoutMs=Number(process.env.COMPONENT_STARTUP_TIMEOUT_MS||90000);
   await new Promise((resolve,reject)=>{
-    const timeout=setTimeout(()=>reject(new Error('No arrancó Vite.')),20000);
-    server.stdout.on('data',data=>{if(data.toString().includes(`127.0.0.1:${port}`)){clearTimeout(timeout);resolve();}});
-    server.once('exit',code=>{clearTimeout(timeout);reject(new Error(`Vite terminó: ${code}`));});
+    const timeout=setTimeout(()=>reject(new Error(`No arrancó Vite en ${startupTimeoutMs}ms. Salida capturada:\n${startupLog.join('')}`)),startupTimeoutMs);
+    // Vite bolds the port number in its ready banner with embedded ANSI codes (e.g.
+    // "127.0.0.1:\x1b[1m5216\x1b[22m/"), which splits a plain includes('127.0.0.1:5216')
+    // check — strip ANSI codes first so this actually matches instead of hanging forever.
+    server.stdout.on('data',data=>{if(stripAnsi(data.toString()).includes(`127.0.0.1:${port}`)){clearTimeout(timeout);resolve();}});
+    server.once('exit',code=>{clearTimeout(timeout);reject(new Error(`Vite terminó: ${code}\nSalida capturada:\n${startupLog.join('')}`));});
   });
   browser=await playwright.chromium.launch({headless:true,...(chromium?{executablePath:chromium}:{})});
   const page=await browser.newPage({viewport:{width:1680,height:1400},deviceScaleFactor:1});
