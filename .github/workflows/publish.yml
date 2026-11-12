@@ -55,6 +55,6 @@ jobs:
           retention-days: 30
       - name: Publish to npm
         # Prefer a trusted publisher (OIDC). NPM_TOKEN is optional for bootstrapping.
-        run: npm publish artifacts/*.tgz --access public --tag "$NPM_DIST_TAG" --ignore-scripts
+        run: npm publish ./artifacts/*.tgz --access public --tag "$NPM_DIST_TAG" --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
