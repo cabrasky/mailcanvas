@@ -1,5 +1,5 @@
 name: Publish npm package
-
+# Re-saved to force GitHub to re-scan this workflow file.
 on:
   release:
     types: [published]
