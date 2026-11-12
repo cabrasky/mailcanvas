@@ -1,0 +1,38 @@
+import { chromium } from 'file:///C:/Users/javie/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs';
+import { spawn } from 'node:child_process';
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5198'], {windowsHide:true});
+await new Promise(resolve=>server.stdout.on('data',data=>{if(data.toString().includes('5198'))resolve();}));
+const browser = await chromium.launch({headless:true,executablePath:'C:/Users/javie/AppData/Local/ms-playwright/chromium_headless_shell-1254/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+try {
+  const page = await browser.newPage({viewport:{width:1600,height:1200},deviceScaleFactor:1});
+  await page.goto('http://127.0.0.1:5198/');
+  const editor = page.locator('.email-editor');
+  const full = await editor.boundingBox();
+  if (full.x !== 0 || full.y !== 0 || full.width !== 1600 || full.height !== 1200) throw new Error('Editor does not fill viewport');
+  await page.screenshot({path:'artifacts/visual/editor-maximizado.png'});
+  await page.getByRole('button',{name:'Minimizar editor',exact:true}).click();
+  if (await editor.evaluate(el=>getComputedStyle(el).position) === 'fixed') throw new Error('Restore failed');
+  await editor.screenshot({path:'artifacts/visual/editor-minimizado.png'});
+  await page.getByRole('button',{name:'Maximizar editor',exact:true}).click();
+  if (!(await editor.getAttribute('class')).includes('ee-maximized')) throw new Error('Maximize failed');
+  const panel = page.locator('.ee-left-panel');
+  await panel.screenshot({path:'artifacts/visual/panel-insertar.png'});
+  await page.getByLabel('Buscar bloques y variables').fill('direccion');
+  if (!await panel.getByRole('button',{name:'Insertar cliente.direccion.calle',exact:true}).count()) throw new Error('Nested variable search failed');
+  await panel.screenshot({path:'artifacts/visual/panel-insertar-busqueda.png'});
+  await page.getByRole('button',{name:/^Variables \d+/}).click();
+  await panel.screenshot({path:'artifacts/visual/panel-variables-estructura.png'});
+  await page.getByLabel('Buscar bloques y variables').fill('products');
+  await panel.screenshot({path:'artifacts/visual/panel-variables-array.png'});
+  if (!await panel.getByText('array<objeto>',{exact:true}).count()) throw new Error('Array type missing');
+  await page.getByRole('tab',{name:'Capas',exact:true}).click();
+  await panel.screenshot({path:'artifacts/visual/panel-capas.png'});
+  await page.getByRole('button',{name:'Contraer todo',exact:true}).click();
+  if (await panel.locator('.ee-layer-row').count() !== 1) throw new Error('Collapse all failed');
+  await page.getByLabel('Buscar capas').fill('Calle');
+  if (!await panel.getByRole('button',{name:/cliente.direccion.calle/}).count()) throw new Error('Layer search did not reveal collapsed descendants');
+  await panel.screenshot({path:'artifacts/visual/panel-capas-busqueda.png'});
+  await page.getByLabel('Buscar capas').fill('ninguna-coincidencia');
+  if (!await panel.getByText(/No hay capas/).count()) throw new Error('Empty search state failed');
+  console.log('Saved four panel screenshots. Verified nested variable search, collapse all, ancestor-preserving layer search and empty state.');
+} finally {await browser.close();server.kill();}

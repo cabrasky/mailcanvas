@@ -1,0 +1,117 @@
+{
+  "date": "2026-11-12",
+  "browser": "158.0.8127.18",
+  "viewport": {
+    "width": 1680,
+    "height": 1100
+  },
+  "deviceScaleFactor": 1,
+  "notes": "Capturas nuevas de la demo real. Cada sección reinicia la sesión. La tabla combinada se configura mediante la interfaz; los datos de ejemplo no se envían a servicios externos.",
+  "captures": [
+    {
+      "file": "01-editor.png",
+      "title": "Editor maximizado · confirmación de pedido",
+      "section": "Demo"
+    },
+    {
+      "file": "02-insertar.png",
+      "title": "Biblioteca de bloques",
+      "section": "Paneles"
+    },
+    {
+      "file": "03-objetos.png",
+      "title": "Objeto y propiedades anidadas",
+      "section": "Datos"
+    },
+    {
+      "file": "04-arrays.png",
+      "title": "Array, tipos y elemento de muestra",
+      "section": "Datos"
+    },
+    {
+      "file": "05-capas.png",
+      "title": "Árbol de capas y fuentes de tabla",
+      "section": "Paneles"
+    },
+    {
+      "file": "06-capas-busqueda.png",
+      "title": "Búsqueda con los grupos padres",
+      "section": "Paneles"
+    },
+    {
+      "file": "07-columnas.png",
+      "title": "Columna: encabezado, formato y orden",
+      "section": "Tablas"
+    },
+    {
+      "file": "08-filas.png",
+      "title": "Valores con T | ƒ y ejemplos calculados",
+      "section": "Tablas"
+    },
+    {
+      "file": "09-resultado.png",
+      "title": "Array calculado y fila única en la misma tabla",
+      "section": "Tablas"
+    },
+    {
+      "file": "10-tabla-combinada.png",
+      "title": "Tabla combinada en el lienzo y en el inspector",
+      "section": "Tablas"
+    },
+    {
+      "file": "11-diseno.png",
+      "title": "Inspector: controles de diseño",
+      "section": "Inspector"
+    },
+    {
+      "file": "12-avanzado.png",
+      "title": "Inspector: CSS y atributos avanzados",
+      "section": "Inspector"
+    },
+    {
+      "file": "13-componentes.png",
+      "title": "Catálogo de componentes compartidos",
+      "section": "Componentes"
+    },
+    {
+      "file": "14-instancia.png",
+      "title": "Instancia personalizada con texto y variables",
+      "section": "Componentes"
+    },
+    {
+      "file": "15-biblioteca.png",
+      "title": "Edición del original compartido",
+      "section": "Componentes"
+    },
+    {
+      "file": "16-bienvenida.png",
+      "title": "Demo: correo de bienvenida",
+      "section": "Demo"
+    },
+    {
+      "file": "17-envio.png",
+      "title": "Demo: actualización del envío",
+      "section": "Demo"
+    },
+    {
+      "file": "18-preview-escritorio.png",
+      "title": "Vista previa local en escritorio",
+      "section": "Preview"
+    },
+    {
+      "file": "19-preview-movil.png",
+      "title": "Vista previa local con ancho móvil",
+      "section": "Preview"
+    },
+    {
+      "file": "20-codigo.png",
+      "title": "Editor de código HTML y Thymeleaf",
+      "section": "Código"
+    },
+    {
+      "file": "21-minimizado.png",
+      "title": "Editor en vista reducida",
+      "section": "Demo"
+    }
+  ]
+}

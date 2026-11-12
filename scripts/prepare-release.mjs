@@ -1,0 +1,15 @@
+import fs from 'node:fs/promises';
+const file=process.argv[2]||'package.json';
+const pkg=JSON.parse(await fs.readFile(file,'utf8'));
+const tag=process.env.PUBLISH_TAG||'';
+if(!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag))throw new Error('Expected a version tag such as v1.0.0 or v1.1.0-beta.1.');
+if(tag.slice(1)!==pkg.version)throw new Error(`Tag ${tag} does not match package version ${pkg.version}.`);
+if(pkg.private)throw new Error('The package is marked private.');
+if(pkg.license!=='MIT')throw new Error('Unexpected package license.');
+const repository=process.env.GITHUB_REPOSITORY||'';
+if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository))throw new Error('GITHUB_REPOSITORY must identify the publishing repository.');
+pkg.repository={type:'git',url:`git+https://github.com/${repository}.git`};
+await fs.writeFile(file,JSON.stringify(pkg,null,2)+'\n');
+const distTag=pkg.version.includes('-')?'next':'latest';
+if(process.env.GITHUB_ENV)await fs.appendFile(process.env.GITHUB_ENV,`NPM_DIST_TAG=${distTag}\n`);
+console.log(`Validated ${pkg.name}@${pkg.version}; npm dist-tag: ${distTag}`);

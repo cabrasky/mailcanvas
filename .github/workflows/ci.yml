@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Tests and build (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:consumer-types
+      - name: Validate distributable package
+        run: npm pack --ignore-scripts --dry-run
+      - name: Create npm archive
+        if: matrix.node == 24
+        run: npm pack --ignore-scripts --pack-destination artifacts
+      - uses: actions/upload-artifact@v7
+        if: matrix.node == 24
+        with:
+          name: npm-package
+          path: artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 14
+
+  browser:
+    name: Browser (React ${{ matrix.react }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPONENT_ARTIFACT_DIR: .ci/browser-results
+    strategy:
+      fail-fast: false
+      matrix:
+        react: [18, 19]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build:lib
+      - name: Install browser tooling
+        run: |
+          npm install --no-save --package-lock=false playwright@1
+          npx playwright install --with-deps chromium
+      - name: Install isolated React 19 consumer
+        if: matrix.react == 19
+        run: |
+          npm install --prefix .ci/react19 --no-save --package-lock=false react@19 react-dom@19
+          echo "REACT_COMPAT_ROOT=$GITHUB_WORKSPACE/.ci/react19/node_modules" >> "$GITHUB_ENV"
+      - run: npm run test:component
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: browser-react-${{ matrix.react }}
+          path: .ci/browser-results/
+          if-no-files-found: warn
+          retention-days: 14

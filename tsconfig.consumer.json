@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": [
+      "vite/client"
+    ],
+    "noUncheckedSideEffectImports": true
+  },
+  "include": [
+    "examples/embedded/main.tsx"
+  ],
+  "exclude": []
+}

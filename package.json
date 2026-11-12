@@ -1,0 +1,79 @@
+{
+  "name": "mailcanvas",
+  "version": "1.0.0",
+  "description": "A Figma-feel visual block editor for HTML email templates, with live Thymeleaf variable binding and a drag-and-drop canvas, as an embeddable React component.",
+  "keywords": [
+    "email editor",
+    "email template",
+    "react component",
+    "visual editor",
+    "block editor",
+    "drag and drop",
+    "wysiwyg",
+    "thymeleaf",
+    "design tool",
+    "canvas"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "npm run build:demo && npm run build:lib",
+    "preview": "vite preview --host 0.0.0.0 --outDir demo-dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "docs:screenshots": "node scripts/capture-docs.mjs",
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/finalize-library.mjs && node scripts/third-party-notices.mjs",
+    "build:demo": "tsc -b && vite build",
+    "prepack": "npm run build:lib",
+    "dev:component": "vite --config examples/embedded/vite.config.ts --host 127.0.0.1",
+    "test:consumer-types": "tsc -p tsconfig.consumer.json",
+    "test:component": "node scripts/smoke-component.mjs"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@monaco-editor/react": "^4.7.0",
+    "emmet-monaco-es": "^5.7.0",
+    "monaco-editor": "^0.52.2"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "docs/REACT-COMPONENT.md",
+    "LICENSE",
+    "THIRD_PARTY_LICENSES.txt"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1 || ^19.0.0",
+    "react-dom": "^18.3.1 || ^19.0.0"
+  },
+  "license": "MIT",
+  "author": "Javier Mateos",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

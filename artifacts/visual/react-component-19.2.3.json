@@ -1,0 +1,19 @@
+{
+  "reactVersion": "19.2.3",
+  "source": "exports del paquete y CSS compilados en dist/",
+  "checks": [
+    "dos instancias embebidas",
+    "onChange independiente",
+    "maximizar/minimizar",
+    "callback de tamaño",
+    "Monaco diferido",
+    "edición de código",
+    "workers"
+  ],
+  "workers": [
+    "blob:http://127.0.0.1:5217/bf5f181d-17e2-4895-bac4-c9adecb04ea7",
+    "blob:http://127.0.0.1:5217/dd4dd197-b873-4207-9efd-d95a76e909b0",
+    "blob:http://127.0.0.1:5217/7b83dde3-e158-4243-ac23-2b1bade3cb30"
+  ],
+  "errors": []
+}

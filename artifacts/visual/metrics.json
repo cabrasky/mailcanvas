@@ -1,0 +1,28 @@
+{
+  "before": {
+    "editor_size": [
+      1016,
+      536
+    ],
+    "preview_size": [
+      958,
+      536
+    ],
+    "different_pixels_percent": 12.242,
+    "mean_absolute_channel_error": 14.682,
+    "threshold": 25
+  },
+  "after": {
+    "editor_size": [
+      957,
+      536
+    ],
+    "preview_size": [
+      957,
+      536
+    ],
+    "different_pixels_percent": 0.001,
+    "mean_absolute_channel_error": 0.0,
+    "threshold": 25
+  }
+}
