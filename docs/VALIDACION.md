@@ -118,3 +118,12 @@ El modo móvil de la preview y la captura de 375 px no certifican adaptación de
 - Cambiar un original, comprobar una instancia personalizada y restablecerla.
 - Recorrer Contenido/Diseño/Avanzado y abrir Código.
 - Revisar preview de escritorio/móvil y maximizar/minimizar.
+
+
+## Regresión de fragmentos importados desde Yambo
+
+La revisión del historial de Yambo recuperó la gestión de elementos comunes del checkpoint `908cccf`. Además se corrigieron en la biblioteca tres problemas de importación/render: bloques autocerrados `<th:block ... />` que anidaban el contenido posterior, referencias con espacios después de `::` y fragmentos protegidos que aparecían vacíos en el lienzo.
+
+`templateMarkup.test.ts` reproduce la estructura de `order-confirmed.html`: conserva seis bloques, los fragmentos, el párrafo posterior y el botón tras importar/exportar. `EmailEditor.test.tsx` verifica que el producto del fragmento protegido se ve en el lienzo. La normalización conserva comentarios, scripts y atributos con signos `>` dentro de comillas.
+
+El frontend de Yambo tiene compatibilidad con su mailcanvas 1.0.0 instalado. Su prueba visual usa el correo real con API simulada y guarda capturas en `C:/code/yambo/docs/screenshots/mailcanvas-review/`. No se modifican datos del servidor ni se envían correos en esa comprobación.

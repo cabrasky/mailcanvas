@@ -1,7 +1,8 @@
+import { normalizeTemplateMarkup } from "./templateMarkup";
 /** Strips script-like content from HTML that is about to be rendered live in the canvas (not inside a sandboxed iframe). */
 export function sanitizeHtmlForDisplay(html: string): string {
   if (typeof DOMParser === "undefined") return html;
-  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+  const doc = new DOMParser().parseFromString(`<div>${normalizeTemplateMarkup(html)}</div>`, "text/html");
   const root = doc.body.firstElementChild;
   if (!root) return "";
   root.querySelectorAll("script,iframe,object,embed,form,style,link").forEach(element => element.remove());

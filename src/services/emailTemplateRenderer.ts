@@ -1,3 +1,4 @@
+import { normalizeTemplateMarkup } from "./templateMarkup";
 import { evaluate, splitExpressionList } from "./thymeleafExpression";
 import { expandComponents, type EmailComponent } from "./emailComponents";
 
@@ -75,7 +76,7 @@ const fragments: Record<string, (...args: unknown[]) => string> = {
 };
 
 function resolveFragment(expression: string, context: Record<string, unknown>, locals: Record<string, unknown>) {
-  const match = expression.match(/::(\w+)\s*\((.*)\)/);
+  const match = expression.match(/::\s*(\w+)\s*\((.*)\)/);
   if (!match) return null;
   const fn = fragments[match[1]];
   if (!fn) return null;
@@ -159,7 +160,7 @@ function processElement(el: Element, context: Record<string, unknown>, locals: R
 export function renderThymeleaf(source: string, context: Record<string, unknown>): RenderResult {
   const warnings: string[] = [];
   if (typeof DOMParser === "undefined") return { html: source, warnings: ["DOMParser no está disponible en este entorno"] };
-  const doc = new DOMParser().parseFromString(source, "text/html");
+  const doc = new DOMParser().parseFromString(normalizeTemplateMarkup(source), "text/html");
   for (const child of Array.from(doc.body.children)) processElement(child, context, {}, warnings);
   return { html: doc.body.innerHTML, warnings };
 }

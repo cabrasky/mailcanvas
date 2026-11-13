@@ -142,7 +142,7 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
   }
 
   if (block.type === "html") {
-    const safeHtml = sanitizeHtmlForDisplay(block.html);
+    const safeHtml = sanitizeHtmlForDisplay(renderThymeleaf(expandComponents(block.html, ctx.components ?? []), { ...buildSampleContext(ctx.tokens), ...locals }).html);
     return <div {...props} style={{ ...blockStyle(block), display: isInlineHtmlRoot(block.html) ? "inline" : undefined }}
       className={`${props.className} ee-block-protected-live`} title="HTML protegido · edítalo en modo Código"
       dangerouslySetInnerHTML={{ __html: safeHtml }} />;
@@ -237,7 +237,7 @@ function StaticBlock({ block, locals, tokens }: { block: EmailBlock; locals: Rec
   const style = blockStyle(block);
   if(block.type === "component") return <div style={style} dangerouslySetInnerHTML={{__html:sanitizeHtmlForDisplay(renderThymeleaf(expandComponents(componentHtml(block),ctx.components??[]),{...buildSampleContext(tokens),...locals}).html)}}/>;
   if (block.type === "html") {
-    const safeHtml = sanitizeHtmlForDisplay(block.html);
+    const safeHtml = sanitizeHtmlForDisplay(renderThymeleaf(expandComponents(block.html, ctx.components ?? []), { ...buildSampleContext(ctx.tokens), ...locals }).html);
     return <div style={{ ...style, display: isInlineHtmlRoot(block.html) ? "inline" : undefined }} dangerouslySetInnerHTML={{ __html: safeHtml }} />;
   }
   if (block.type === "heading") {

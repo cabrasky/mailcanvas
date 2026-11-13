@@ -1,3 +1,4 @@
+import { normalizeTemplateMarkup } from "./templateMarkup";
 import type { EmailToken } from "./emailTemplateRenderer";
 import { tableRowGroups, columnExpression } from "./tableRows";
 import { componentHtml, readComponent, type ComponentInstance, type EmailComponent } from "./emailComponents";
@@ -276,7 +277,7 @@ function parseInlineText(text: string): InlineNode[] {
 
 export function parseInlineHtmlToNodes(html: string): InlineNode[] {
   if (typeof DOMParser === "undefined") return [{ type: "text", text: html.replace(/<[^>]*>/g, "") }];
-  const document = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+  const document = new DOMParser().parseFromString(`<div>${normalizeTemplateMarkup(html)}</div>`, "text/html");
   return Array.from(document.body.firstElementChild?.childNodes ?? []).flatMap(parseInlineNode);
 }
 
@@ -553,7 +554,7 @@ function htmlBlock(element: Element, id: string): EmailBlock {
 export function parseEmailHtmlToBlocks(source: string): EmailBlock[] {
   if (!source.trim()) return [];
   if (typeof DOMParser === "undefined") return [{ id: "source-html", type: "html", html: source }];
-  const document = new DOMParser().parseFromString(source, "text/html");
+  const document = new DOMParser().parseFromString(normalizeTemplateMarkup(source), "text/html");
   let index = 0;
   const nextId = () => `imported-${++index}`;
   return parseChildNodesGrouped(Array.from(document.body.childNodes), nextId);

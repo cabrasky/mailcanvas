@@ -5,3 +5,5 @@ export type { EmailComponent, ComponentProperty, ComponentValue, ComponentInstan
 export type { EmailBlock, InlineNode, TableCell, TableRowGroup, TableColumnFormat } from "./services/emailBlocks";
 export { renderEmail, renderThymeleaf } from "./services/emailTemplateRenderer";
 export { parseEmailHtmlToBlocks, emailBlocksToHtml } from "./services/emailBlocks";
+
+export { normalizeTemplateMarkup } from "./services/templateMarkup";

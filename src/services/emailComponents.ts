@@ -1,3 +1,4 @@
+import { normalizeTemplateMarkup } from "./templateMarkup";
 import { templateExpression } from "./valueSyntax";
 export type ComponentProperty = {key:string;label:string;type:"text"|"url"|"color"|"boolean";defaultValue:string};
 export type ComponentValue = {mode:"literal"|"expression";value:string};
@@ -27,7 +28,7 @@ export function readComponent(element:Element):ComponentInstance|undefined {
 }
 export function expandComponents(source:string,definitions:EmailComponent[],depth=0):string {
   if(typeof DOMParser==="undefined"||depth>8)return source;
-  const doc=new DOMParser().parseFromString(source,"text/html");
+  const doc=new DOMParser().parseFromString(normalizeTemplateMarkup(source),"text/html");
   // Resolve only outer instances, then recurse into each definition so nested instances stay linked.
   for(const element of Array.from(doc.body.querySelectorAll("[data-ee-component]"))){
     if(element.parentElement?.closest("[data-ee-component]"))continue;

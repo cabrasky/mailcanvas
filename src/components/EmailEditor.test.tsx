@@ -7,6 +7,15 @@ afterEach(cleanup);
 const token = { token: "{{nombre}}", label: "Nombre", varName: "nombre", sample: "Ana" };
 
 describe("EmailEditor", () => {
+  it("renders protected server fragments in the canvas without hiding following blocks", () => {
+    const { container } = render(<EmailEditor value={'<th:block th:replace="~{emails/fragments/layout :: productTable(${products}, ${totalPrice})}"/><p>Después del pedido</p>'} onChange={() => {}} tokens={[
+      { token: "{{productos}}", varName: "products", label: "Productos", sample: [{ name: "Camiseta Yambo", quantity: 2, price: 10 }] },
+      { token: "{{total}}", varName: "totalPrice", label: "Total", sample: 20 },
+    ]} />);
+    expect(container.querySelector(".ee-block-protected-live")).toHaveTextContent("Camiseta Yambo");
+    expect(container.querySelectorAll("[data-ee-block-id]")).toHaveLength(2);
+    expect(screen.getByText("Después del pedido")).toBeInTheDocument();
+  });
   it("embeds by default, accepts host styling and restores it after maximizing",()=>{
     const onMaximizedChange=vi.fn();
     render(<EmailEditor title="Componente integrado" value="<p>Hola</p>" onChange={()=>{}} className="host-editor" style={{height:420,minHeight:0}} onMaximizedChange={onMaximizedChange}/>);
