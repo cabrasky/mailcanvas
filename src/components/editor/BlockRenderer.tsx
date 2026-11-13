@@ -1,5 +1,5 @@
 import { tableSampleRows, resolveCellTemplate } from "../../services/tableRows";
-import { componentHtml, expandComponents } from "../../services/emailComponents";
+import { componentHtml, expandComponents, type EmailComponent } from "../../services/emailComponents";
 import { buildSampleContext, renderThymeleaf } from "../../services/emailTemplateRenderer";
 import React, { useEffect, useRef } from "react";
 import { safeUrl, type EmailBlock, type InlineNode } from "../../services/emailBlocks";
@@ -11,6 +11,19 @@ import type { EmailToken } from "../../services/emailTemplateRenderer";
 import { armThresholdDrag } from "../email-editor/dragThreshold";
 
 type Props = { blocks: EmailBlock[]; locals?: Record<string, unknown>; loopId?: string };
+
+/** All canvas HTML uses the same component expansion, sample context and sanitizer. */
+function renderPreviewHtml(
+  source: string,
+  tokens: EmailToken[],
+  locals: Record<string, unknown>,
+  components: EmailComponent[] = [],
+): string {
+  const expanded = expandComponents(source, components);
+  const context = { ...buildSampleContext(tokens), ...locals };
+  return sanitizeHtmlForDisplay(renderThymeleaf(expanded, context).html);
+}
+
 
 function useInlineEditable(node: HTMLElement | null, isEditing: boolean, onCommit: (html: string) => void) {
   const originalRef = useRef<string>("");
@@ -137,12 +150,12 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
 }) {
   if (block.type === "component") {
     const definition=ctx.components?.find(item=>item.key===block.componentKey);
-    const html=renderThymeleaf(expandComponents(componentHtml(block,definition),ctx.components??[]),{...buildSampleContext(ctx.tokens),...locals}).html;
-    return <div {...props} className={`${props.className} ee-component-instance`} title={`Instancia de ${definition?.name??block.name}`}><span className="ee-component-tag">◇ {definition?.name??block.name}</span><div dangerouslySetInnerHTML={{__html:sanitizeHtmlForDisplay(html)}}/></div>;
+    const html = renderPreviewHtml(componentHtml(block, definition), ctx.tokens, locals, ctx.components);
+    return <div {...props} className={`${props.className} ee-component-instance`} title={`Instancia de ${definition?.name??block.name}`}><span className="ee-component-tag">◇ {definition?.name??block.name}</span><div dangerouslySetInnerHTML={{__html:html}}/></div>;
   }
 
   if (block.type === "html") {
-    const safeHtml = sanitizeHtmlForDisplay(renderThymeleaf(expandComponents(block.html, ctx.components ?? []), { ...buildSampleContext(ctx.tokens), ...locals }).html);
+    const safeHtml = renderPreviewHtml(block.html, ctx.tokens, locals, ctx.components);
     return <div {...props} style={{ ...blockStyle(block), display: isInlineHtmlRoot(block.html) ? "inline" : undefined }}
       className={`${props.className} ee-block-protected-live`} title="HTML protegido · edítalo en modo Código"
       dangerouslySetInnerHTML={{ __html: safeHtml }} />;
@@ -235,9 +248,9 @@ function StaticBlockRenderer({ blocks, locals, tokens }: { blocks: EmailBlock[];
 function StaticBlock({ block, locals, tokens }: { block: EmailBlock; locals: Record<string, unknown>; tokens: EmailToken[] }) {
   const ctx=useCanvasContext();
   const style = blockStyle(block);
-  if(block.type === "component") return <div style={style} dangerouslySetInnerHTML={{__html:sanitizeHtmlForDisplay(renderThymeleaf(expandComponents(componentHtml(block),ctx.components??[]),{...buildSampleContext(tokens),...locals}).html)}}/>;
+  if(block.type === "component") return <div style={style} dangerouslySetInnerHTML={{__html:renderPreviewHtml(componentHtml(block), tokens, locals, ctx.components)}}/>;
   if (block.type === "html") {
-    const safeHtml = sanitizeHtmlForDisplay(renderThymeleaf(expandComponents(block.html, ctx.components ?? []), { ...buildSampleContext(ctx.tokens), ...locals }).html);
+    const safeHtml = renderPreviewHtml(block.html, ctx.tokens, locals, ctx.components);
     return <div style={{ ...style, display: isInlineHtmlRoot(block.html) ? "inline" : undefined }} dangerouslySetInnerHTML={{ __html: safeHtml }} />;
   }
   if (block.type === "heading") {
