@@ -164,7 +164,7 @@ export function emailBlocksToHtml(blocks: EmailBlock[], options: { editorMetadat
   collectClassRules(blocks);
   const markup = blocks.map(block => {
     switch (block.type) {
-      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey));
+      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey), attributesFor(block, {}, !!options.editorMetadata));
       case "html": return block.html;
       case "heading": {
         const level = block.level ?? 2;
@@ -183,7 +183,7 @@ export function emailBlocksToHtml(blocks: EmailBlock[], options: { editorMetadat
           style: "display:inline-block;padding:12px 22px;background:#315ee8;border-radius:6px;color:#fff;text-decoration:none;font-weight:600",
         }, !!options.editorMetadata)}>${parseInlineText(block.text).map(node=>inlineNodeToHtml(node,!!options.editorMetadata)).join("")}</a>`;
       }
-      case "image": return `<img${attributesFor(block, { ...(block.srcMode !== "text" && block.src.includes("${") ? {"th:src":`\${${templateExpression(block.src)}}`} : {src:block.src}), alt: block.alt, width: block.width }, !!options.editorMetadata)} />`;
+      case "image": return `<img${attributesFor({ ...block, styles: { maxWidth: "100%", height: "auto", ...block.styles } }, { ...(block.srcMode !== "text" && block.src.includes("${") ? {"th:src":`\${${templateExpression(block.src)}}`} : {src:block.src}), alt: block.alt, width: block.width }, !!options.editorMetadata)} />`;
       case "divider": return `<hr${attributesFor(block, { style: `border:0;border-top:1px solid ${block.color};margin:16px 0` }, !!options.editorMetadata)} />`;
       case "spacer": return `<div${attributesFor(block, { style: `height:${Math.max(0, Math.min(Number(block.height) || 0, 1000))}px;line-height:${Math.max(0, Math.min(Number(block.height) || 0, 1000))}px;font-size:1px` }, !!options.editorMetadata)}>&nbsp;</div>`;
       case "table": {

@@ -6,7 +6,7 @@ export type EmailComponent = {key:string;name:string;description:string;category
 export type ComponentInstance = {componentKey:string;name:string;values:Record<string,ComponentValue>;fallbackHtml:string;properties:ComponentProperty[]};
 const escape=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const quote=(value:string)=>`'${value.replace(/\\/g,"\\\\").replace(/'/g,"\\'")}'`;
-export function componentHtml(instance:ComponentInstance,definition?:EmailComponent):string {
+export function componentHtml(instance:ComponentInstance,definition?:EmailComponent, presentationAttributes = ""):string {
   const properties=definition?.properties??instance.properties;
   const assignments=properties.filter(prop=>/^[\w$]+$/.test(prop.key)).map(prop=>{
     const value=instance.values[prop.key]??{mode:"literal",value:prop.defaultValue};
@@ -14,7 +14,7 @@ export function componentHtml(instance:ComponentInstance,definition?:EmailCompon
     const literal=prop.type==="boolean"?String(value.value==="true"):prop.type==="number"?(numeric?String(Number(value.value)):"null"):quote(value.value);
     return `${prop.key}=${value.mode==="expression"?(value.value.includes("${")?templateExpression(value.value):value.value):literal}`;
   }).join(", ");
-  return `<div data-ee-component="${escape(instance.componentKey)}" data-ee-component-name="${escape(definition?.name??instance.name)}" data-ee-component-values="${escape(JSON.stringify(instance.values))}" data-ee-component-properties="${escape(JSON.stringify(properties))}"${assignments?` th:with="${escape(assignments)}"`:""}>${definition?.html??instance.fallbackHtml}</div>`;
+  return `<div${presentationAttributes} data-ee-component="${escape(instance.componentKey)}" data-ee-component-name="${escape(definition?.name??instance.name)}" data-ee-component-values="${escape(JSON.stringify(instance.values))}" data-ee-component-properties="${escape(JSON.stringify(properties))}"${assignments?` th:with="${escape(assignments)}"`:""}>${definition?.html??instance.fallbackHtml}</div>`;
 }
 export function readComponent(element:Element):ComponentInstance|undefined {
   const key=element.getAttribute("data-ee-component");
@@ -38,6 +38,10 @@ export function expandComponents(source:string,definitions:EmailComponent[],dept
     if(!instance)continue;
     const definition=definitions.find(item=>item.key===instance.componentKey);
     const rendered=new DOMParser().parseFromString(componentHtml(instance,definition),"text/html").body.firstElementChild!;
+    // Presentation belongs to this instance, not to the shared definition.
+    for (const name of ["style", "class", "data-ee-block-id", "data-ee-block-kind"]) {
+      if (element.hasAttribute(name)) rendered.setAttribute(name, element.getAttribute(name)!);
+    }
     rendered.innerHTML=expandComponents(rendered.innerHTML,definitions,depth+1);
     element.replaceWith(rendered);
   }

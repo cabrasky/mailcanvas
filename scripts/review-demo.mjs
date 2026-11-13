@@ -23,6 +23,16 @@ try {
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.ee-email-page img')).every(image=>image.complete && image.naturalWidth > 0));
  assert.notEqual(await page.locator('.ee-email-page img').first().getAttribute('src'),'#');
  await page.screenshot({path:path.join(output,'01-boletin.png')});
+
+ await page.locator('.ee-component-instance').filter({has:page.locator('img')}).click();
+ await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+ await page.getByRole('spinbutton',{name:'Ancho máximo',exact:true}).fill('52');
+ const componentBox=await page.locator('.ee-component-instance').filter({has:page.locator('img')}).boundingBox();
+ assert.ok(componentBox.width <= 53, `Component max-width ignored: ${componentBox.width}`);
+ await page.screenshot({path:path.join(output,'07-componente-ancho-52.png')});
+ await page.getByRole('spinbutton',{name:'Ancho máximo',exact:true}).fill('320');
+ await page.getByRole('spinbutton',{name:'Espaciado interior',exact:true}).fill('16');
+ await page.screenshot({path:path.join(output,'08-componente-diseno.png')});
  await page.getByLabel('Correo a editar').selectOption('welcome');
  await page.getByRole('button',{name:'Probar funciones',exact:true}).click();
  let dialog=page.getByRole('dialog',{name:'Prueba las funciones del editor'});
@@ -48,6 +58,28 @@ try {
  await page.waitForFunction(()=>document.querySelector('input[aria-label="URL de imagen"]')?.value.startsWith('blob:'));
  await page.getByRole('button',{name:'Adaptable',exact:true}).click();await page.getByRole('spinbutton',{name:'Ancho adaptable',exact:true}).fill('70');
  await page.screenshot({path:path.join(output,'04-imagen-local.png')});
+
+ const imageSizes=[];
+ for(const [name,width,height] of [['horizontal',960,240],['vertical',240,720],['cuadrada',480,480],['pequena',64,32]]) {
+   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#315ee8"/><circle cx="${width/2}" cy="${height/2}" r="${Math.min(width,height)/3}" fill="#ffe298"/></svg>`;
+   await page.getByRole('tab',{name:'Contenido',exact:true}).click();
+   await page.getByLabel('Subir imagen: URL de imagen',{exact:true}).setInputFiles({name:`${name}.svg`,mimeType:'image/svg+xml',buffer:Buffer.from(svg)});
+   await page.getByRole('button',{name:'Original',exact:true}).click();
+   await page.waitForFunction(({w,h})=>{const img=document.querySelector('img.ee-block-selected');return img?.naturalWidth===w && img?.naturalHeight===h;},{w:width,h:height});
+   await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+   await page.getByLabel('Unidad de Ancho máximo',{exact:true}).selectOption('px');
+   await page.getByRole('spinbutton',{name:'Ancho máximo',exact:true}).fill('180');
+   await page.getByRole('spinbutton',{name:'Radio de las esquinas',exact:true}).fill('20');
+   await page.getByRole('button',{name:'Centrar',exact:true}).click();
+   const measured=await page.locator('img.ee-block-selected').evaluate(img=>({width:img.getBoundingClientRect().width,height:img.getBoundingClientRect().height,radius:getComputedStyle(img).borderRadius}));
+   assert.ok(measured.width<=180.5);
+   assert.ok(Math.abs(measured.width/measured.height-width/height)<0.02,`${name}: distorted aspect ratio`);
+   assert.equal(measured.radius,'20px');
+   imageSizes.push({name,natural:{width,height},rendered:measured});
+   await page.locator('img.ee-block-selected').scrollIntoViewIfNeeded();
+   await page.screenshot({path:path.join(output,`09-imagen-${name}.png`)});
+ }
+ await fs.writeFile(path.join(output,'image-sizes.json'),JSON.stringify(imageSizes,null,2));
  assert.deepEqual(errors,[]);await fs.writeFile(path.join(output,'report.json'),JSON.stringify({checks:['six templates','newsletter image','structured sample editing','local draft recovery','failed save stays dirty','retry save','JSON export','HTML import','confirmed reset','typed component defaults','cross-template component update','local image upload','responsive sizing'],errors},null,2));
  console.log('Demo review passed:',output);
 } finally { if(browser)await browser.close();server.kill(); }

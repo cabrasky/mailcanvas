@@ -1,0 +1,50 @@
+[
+  {
+    "name": "horizontal",
+    "natural": {
+      "width": 960,
+      "height": 240
+    },
+    "rendered": {
+      "width": 180,
+      "height": 45,
+      "radius": "20px"
+    }
+  },
+  {
+    "name": "vertical",
+    "natural": {
+      "width": 240,
+      "height": 720
+    },
+    "rendered": {
+      "width": 180,
+      "height": 540,
+      "radius": "20px"
+    }
+  },
+  {
+    "name": "cuadrada",
+    "natural": {
+      "width": 480,
+      "height": 480
+    },
+    "rendered": {
+      "width": 180,
+      "height": 180,
+      "radius": "20px"
+    }
+  },
+  {
+    "name": "pequena",
+    "natural": {
+      "width": 64,
+      "height": 32
+    },
+    "rendered": {
+      "width": 64,
+      "height": 32,
+      "radius": "20px"
+    }
+  }
+]

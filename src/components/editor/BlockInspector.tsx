@@ -133,18 +133,18 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
         <div className="ee-inspector-section-body">
 
           <div className="ee-row2">
-            <div className="ee-field"><span>Texto</span><ColorInput label="Color del texto" value={block.styles?.color ?? ""} onChange={color => patch({ styles: { ...block.styles, color } })} placeholder="#172033" /></div>
+            {block.type !== "image" && <div className="ee-field"><span>Texto</span><ColorInput label="Color del texto" value={block.styles?.color ?? ""} onChange={color => patch({ styles: { ...block.styles, color } })} placeholder="#172033" /></div>}
             <div className="ee-field"><span>Fondo</span><ColorInput label="Color del fondo" value={block.styles?.backgroundColor ?? ""} onChange={backgroundColor => patch({ styles: { ...block.styles, backgroundColor } })} /></div>
-            <LengthInput label="Tamaño del texto" value={block.styles?.fontSize ?? ""} onChange={fontSize => patch({ styles: { ...block.styles, fontSize } })} placeholder="16px" />
+            {block.type !== "image" && <LengthInput label="Tamaño del texto" value={block.styles?.fontSize ?? ""} onChange={fontSize => patch({ styles: { ...block.styles, fontSize } })} placeholder="16px" />}
             <LengthInput label="Espaciado interior" value={block.styles?.padding ?? ""} onChange={padding => patch({ styles: { ...block.styles, padding } })} />
             <LengthInput label="Radio de las esquinas" value={block.styles?.borderRadius ?? ""} onChange={borderRadius => patch({ styles: { ...block.styles, borderRadius } })} placeholder="8px" />
             <LengthInput label="Ancho máximo" value={block.styles?.maxWidth ?? ""} onChange={maxWidth => patch({ styles: { ...block.styles, maxWidth } })} placeholder="600px" />
           </div>
           <div className="ee-field"><span>Alineación</span>
-            <div className="ee-alignment-control" role="group" aria-label="Alineación del texto">
+            <div className="ee-alignment-control" role="group" aria-label={block.type === "image" ? "Posición de la imagen" : "Alineación del texto"}>
               {([["left", "⇤", "Izquierda"], ["center", "↔", "Centrar"], ["right", "⇥", "Derecha"]] as const).map(([value, icon, name]) =>
                 <button key={value} className={block.styles?.textAlign === value ? "selected" : ""} aria-label={name} aria-pressed={block.styles?.textAlign === value}
-                  type="button" title={name} onClick={() => onPatch(block.id, { styles: { ...block.styles, textAlign: value } })}><span aria-hidden="true">{icon}</span><span>{name}</span></button>)}
+                  type="button" title={name} onClick={() => onPatch(block.id, { styles: { ...block.styles, textAlign: value, ...(block.type === "image" ? { display: "block", marginLeft: value === "left" ? "0" : "auto", marginRight: value === "right" ? "0" : "auto" } : {}) } })}><span aria-hidden="true">{icon}</span><span>{name}</span></button>)}
             </div>
           </div>
 

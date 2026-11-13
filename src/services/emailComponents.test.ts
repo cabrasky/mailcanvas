@@ -7,6 +7,25 @@ const instance:ComponentInstance={componentKey:definition.key,name:definition.na
 const tokens=[{token:"{{nombre}}",label:"Nombre",varName:"nombre",sample:"Lucía"}];
 const render=(source:string,components=[definition])=>new DOMParser().parseFromString(renderEmail(source,tokens,"",{components}).html,"text/html");
 describe("linked email components",()=>{
+  it("preserves instance design through export, library expansion and reimport",()=>{
+    const styles={maxWidth:"52px",padding:"7px",backgroundColor:"#abcdef",borderRadius:"9px",textAlign:"center"};
+    const source=emailBlocksToHtml([{...instance,id:"design",type:"component",styles,className:"campaign-image"}]);
+    const node=render(source).querySelector<HTMLElement>("[data-ee-component]")!;
+    expect(node.style.maxWidth).toBe("52px");
+    expect(node.style.padding).toBe("7px");
+    expect(node.style.backgroundColor).toBe("rgb(171, 205, 239)");
+    expect(node.style.borderRadius).toBe("9px");
+    expect(node.style.textAlign).toBe("center");
+    expect(node.className).toBe("campaign-image");
+    expect(parseEmailHtmlToBlocks(source)[0].styles).toMatchObject(styles);
+  });
+  it("exports responsive image defaults without overriding explicit design",()=>{
+    const source=emailBlocksToHtml([{id:"image",type:"image",src:"/portrait.png",alt:"Retrato",width:"600",styles:{maxWidth:"120px",borderRadius:"16px"}}]);
+    const image=render(source).querySelector("img")!;
+    expect(image.style.maxWidth).toBe("120px");
+    expect(image.style.height).toBe("auto");
+    expect(image.style.borderRadius).toBe("16px");
+  });
   it("preserves invalid numeric metadata without exporting an invented zero",()=>{
     for (const value of ["", "not a number"]) {
       const numeric:EmailComponent={...definition,properties:[{key:"quantity",label:"Cantidad",type:"number",defaultValue:"2"}]};

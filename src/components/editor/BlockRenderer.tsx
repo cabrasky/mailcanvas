@@ -151,7 +151,7 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
   if (block.type === "component") {
     const definition=ctx.components?.find(item=>item.key===block.componentKey);
     const html = renderPreviewHtml(componentHtml(block, definition), ctx.tokens, locals, ctx.components);
-    return <div {...props} className={`${props.className} ee-component-instance`} title={`Instancia de ${definition?.name??block.name}`}><span className="ee-component-tag">◇ {definition?.name??block.name}</span><div dangerouslySetInnerHTML={{__html:html}}/></div>;
+    return <div {...props} style={{ ...blockStyle(block), ...props.style }} className={`${props.className} ee-component-instance`} title={`Instancia de ${definition?.name??block.name}`}><span className="ee-component-tag">◇ {definition?.name??block.name}</span><div dangerouslySetInnerHTML={{__html:html}}/></div>;
   }
 
   if (block.type === "html") {
@@ -191,7 +191,7 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
     const src=block.srcMode !== "text" ? resolveCellTemplate(block.src,ctx.tokens,locals) : block.src;
     const looksReal = /^(https?:\/\/|blob:|\/(?!\/))/i.test(src);
     return looksReal
-      ? <img {...props} src={src} alt={block.alt} style={{ maxWidth: "100%", width: block.width ? `${block.width}px` : undefined, ...blockStyle(block) }} draggable={false} />
+      ? <img {...props} src={src} alt={block.alt} style={{ maxWidth: "100%", height: "auto", width: block.width ? `${block.width}px` : undefined, ...blockStyle(block) }} draggable={false} />
       : <div {...props} className={`${props.className} ee-render-image-missing`} style={blockStyle(block)}><span>▧</span>{block.alt || "Imagen"}</div>;
   }
   if (block.type === "divider") {
@@ -275,7 +275,7 @@ function StaticBlock({ block, locals, tokens }: { block: EmailBlock; locals: Rec
     const src = block.srcMode !== "text" ? resolveCellTemplate(block.src, tokens, locals) : block.src;
     const looksReal = /^(https?:\/\/|blob:|\/(?!\/))/i.test(src);
     return <div>{looksReal
-      ? <img src={src} alt={block.alt} style={{ maxWidth: "100%", width: block.width ? `${block.width}px` : undefined, ...style }} draggable={false} />
+      ? <img src={src} alt={block.alt} style={{ maxWidth: "100%", height: "auto", width: block.width ? `${block.width}px` : undefined, ...style }} draggable={false} />
       : <div className="ee-render-image-missing"><span>▧</span>{block.alt || "Imagen"}</div>}</div>;
   }
   if (block.type === "divider") return <div style={style}><hr style={{ border: 0, borderTop: `1px solid ${block.color}`, margin: "12px 0" }} /></div>;
