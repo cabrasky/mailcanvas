@@ -1,9 +1,20 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import LiteralInput from "./LiteralInput";
 import ValueInput from "./ValueInput";
 
 afterEach(cleanup);
+it("uploads an image through the host callback and reports broken previews", async () => {
+  const change = vi.fn();
+  const upload = vi.fn().mockResolvedValue("https://example.com/logo.png");
+  render(<LiteralInput label="Imagen" type="image" value="https://example.com/broken.png" onChange={change} onUploadImage={upload} />);
+  fireEvent.error(screen.getByAltText("Vista previa de la imagen"));
+  expect(screen.getByRole("alert")).toHaveTextContent("No se pudo cargar");
+  const file = new File(["test"], "logo.png", { type: "image/png" });
+  await act(async () => fireEvent.change(screen.getByLabelText("Subir imagen: Imagen"), { target: { files: [file] } }));
+  expect(upload).toHaveBeenCalledWith(file);
+  expect(change).toHaveBeenCalledWith("https://example.com/logo.png");
+});
 it("uses a numeric control for literals and keeps expressions editable", () => {
   const onChange = vi.fn();
   const props = { label: "Cantidad", value: "2", options: [], onChange, valueType: "number" as const };

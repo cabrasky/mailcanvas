@@ -13,15 +13,17 @@ import EditorFooter from "./editor/EditorFooter";
 
 export type EmailEditorProps = {
   value: string; onChange: (value: string) => void; tokens?: EmailToken[]; templateKey?: string;
-  commonElements?: CommonElements; onServerPreview?: () => void; onSave?: () => void;
+  commonElements?: CommonElements; onServerPreview?: () => void; onSave?: () => void | boolean | Promise<void | boolean>;
   navigation?: React.ReactNode; onReset?: () => void; onSendTest?: () => void; title?: string;
   className?: string; style?: React.CSSProperties;
+  dirty?: boolean;
+  onUploadImage?: (file: File) => Promise<string>;
   defaultMaximized?: boolean; maximized?: boolean; onMaximizedChange?: (maximized: boolean) => void;
 };
 const TemplateCodeEditor = lazy(() => import("./editor/TemplateCodeEditor"));
 const fullscreenDocuments=new WeakMap<Document,{count:number;overflow:string}>();
 
-export default function EmailEditor({ value, onChange, tokens = [], templateKey = "", commonElements = {}, onServerPreview, onSave, onReset, onSendTest, navigation, title = "Editor de plantilla", className, style, defaultMaximized = false, maximized: controlledMaximized, onMaximizedChange }: EmailEditorProps) {
+export default function EmailEditor({ value, onChange, tokens = [], templateKey = "", commonElements = {}, onServerPreview, onSave, onReset, onSendTest, onUploadImage, navigation, title = "Editor de plantilla", className, style, dirty: controlledDirty, defaultMaximized = false, maximized: controlledMaximized, onMaximizedChange }: EmailEditorProps) {
   const editor = useEmailEditor({ value, onChange, tokens, templateKey, commonElements });
   const {
     mode, compare, setCompare, viewport, setViewport, zoom, setZoom, pan, setPan, leftTab, setLeftTab,
@@ -84,7 +86,7 @@ export default function EmailEditor({ value, onChange, tokens = [], templateKey 
 
   return <section className={`email-editor${maximized ? " ee-maximized" : ""}${className ? ` ${className}` : ""}`} style={{...style,...(maximized ? {position:"fixed",inset:0,width:"100%",height:"100dvh",minHeight:0} as React.CSSProperties : {})}} role="region" aria-label={title} tabIndex={-1} onKeyDown={handleKeyDown}
     onClick={event => { if (!(event.target as HTMLElement).closest(".ee-context-menu")) setContextMenu(null); }}>
-    <EditorToolbar navigation={navigation} title={title} mode={mode} compare={compare} dirty={dirty} onModeChange={changeMode}
+    <EditorToolbar navigation={navigation} title={title} mode={mode} compare={compare} dirty={controlledDirty ?? dirty} onModeChange={changeMode}
       onCompareChange={() => setCompare(current => !current)} onPreview={previewNow} onUndo={undoOne} onRedo={redoOne} canUndo={canUndo} canRedo={canRedo}
       maximized={maximized} onToggleMaximized={toggleMaximized} />
     {hasThymeleaf && mode === "blocks" && <div className="ee-warning">Las directivas compatibles se convierten en bloques. Las estructuras no reconocidas se conservan como HTML protegido.</div>}
@@ -122,7 +124,7 @@ export default function EmailEditor({ value, onChange, tokens = [], templateKey 
             title={inspectorCollapsed ? "Mostrar inspector" : "Ocultar inspector"} aria-label={inspectorCollapsed ? "Mostrar inspector" : "Ocultar inspector"}>
             {inspectorCollapsed ? "‹" : "›"}
           </button>
-          {!inspectorCollapsed && <BlockInspector components={commonElements.components} style={{ width: inspectorWidth }} block={selected} multiCount={selectedIds.size} tokens={tokens} loopCollection={selectedLoopCollection} onPatch={patch} onInsertVariable={addVariable} selectedTableField={selectedTableFields[0]} />}
+          {!inspectorCollapsed && <BlockInspector onUploadImage={onUploadImage} components={commonElements.components} style={{ width: inspectorWidth }} block={selected} multiCount={selectedIds.size} tokens={tokens} loopCollection={selectedLoopCollection} onPatch={patch} onInsertVariable={addVariable} selectedTableField={selectedTableFields[0]} />}
         </div> : <Suspense fallback={<div style={{ display: "grid", placeItems: "center", minHeight: 0, flex: 1, background: "#111827", color: "#aab7c8", fontSize: 12 }}>Cargando editor HTML y Thymeleaf…</div>}>
           <TemplateCodeEditor value={value} tokens={tokens} onChange={changeCode} />
         </Suspense>}
@@ -133,6 +135,6 @@ export default function EmailEditor({ value, onChange, tokens = [], templateKey 
       {compare && <LivePreview style={{ flex: `${100 - editorRatio} 1 0%`, minWidth: 360 }} html={preview.html} warnings={preview.warnings} viewport={viewport} onViewportChange={setViewport} />}
     </div>
     {mode === "blocks" && <EditorContextMenu target={contextMenu} onClose={() => setContextMenu(null)} onDuplicate={duplicateBlock} onMove={moveBlock} onDelete={deleteBlock} />}
-    <EditorFooter mode={mode} hasThymeleaf={hasThymeleaf} onServerPreview={onServerPreview} onReset={onReset} onSendTest={onSendTest} onSave={onSave} onSaveComplete={() => setDirty(false)} />
+    <EditorFooter mode={mode} hasThymeleaf={hasThymeleaf} onServerPreview={onServerPreview} onReset={onReset} onSendTest={onSendTest} onSave={onSave} value={value} onSaveComplete={() => setDirty(false)} />
   </section>;
 }

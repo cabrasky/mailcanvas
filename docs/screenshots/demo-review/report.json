@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "six templates",
+    "newsletter image",
+    "structured sample editing",
+    "local draft recovery",
+    "failed save stays dirty",
+    "retry save",
+    "JSON export",
+    "HTML import",
+    "confirmed reset",
+    "typed component defaults",
+    "cross-template component update",
+    "local image upload",
+    "responsive sizing"
+  ],
+  "errors": []
+}

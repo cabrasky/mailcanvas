@@ -1,3 +1,4 @@
+import ImageInspector from "./ImageInspector";
 import ValueInput from "./ValueInput";
 import { singleVariable } from "../../services/valueSyntax";
 import { useMemo, useRef, useState } from "react";
@@ -14,6 +15,7 @@ import ComponentInspector from "./ComponentInspector";
 import { ColorInput, LengthInput } from "./StyleInputs";
 
 type Props = {
+  onUploadImage?: (file: File) => Promise<string>;
   style?: React.CSSProperties;
   block?: EmailBlock; multiCount?: number; tokens: EmailToken[]; loopCollection?: string;
   components?: EmailComponent[];
@@ -27,7 +29,7 @@ const typeTitle: Record<EmailBlock["type"], string> = {
   container: "Contenedor", loop: "Bucle", if: "Condición",
 };
 
-export default function BlockInspector({ style, block, multiCount, tokens, loopCollection, components = [], onPatch, onInsertVariable, selectedTableField }: Props) {
+export default function BlockInspector({ style, block, multiCount, tokens, loopCollection, components = [], onPatch, onInsertVariable, selectedTableField, onUploadImage }: Props) {
   const [inspectorView,setInspectorView]=useState<{id:string;tab:"content"|"design"|"advanced"}>({id:"",tab:"content"});
   const tab=inspectorView.id===block?.id?inspectorView.tab:"content";
   const [expression, setExpression] = useState(tokens[0]?.varName ?? "nombre");
@@ -79,7 +81,7 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
         <summary>Contenido y datos</summary>
         <div className="ee-inspector-section-body">
           {block.type === "html" && <p className="ee-help-note">Este fragmento se conserva como HTML. Cambia a Código para editarlo.</p>}
-          {block.type === "component" && <ComponentInspector block={block} components={components} options={varOptions} onPatch={patch} />}
+          {block.type === "component" && <ComponentInspector key={block.id} onUploadImage={onUploadImage} block={block} components={components} options={varOptions} onPatch={patch} />}
           {(block.type === "heading" || block.type === "paragraph" || block.type === "rich" || block.type === "button") && <>
             <label className="ee-field"><span>{block.type === "button" ? "Texto del botón" : "Texto"}</span>
               <InlineSyntaxEditor ref={inputRef} value={textValue} options={varOptions} onChange={changeText}
@@ -104,11 +106,7 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
           {block.type === "button" && block.textExpression && <div className="ee-dynamic-badge"><span>ƒ</span>Texto conectado a {block.textExpression}
             <button className="ee-btn" onClick={() => patch({ textExpression: undefined })}>Usar fijo</button>
           </div>}
-          {block.type === "image" && <>
-            <div className="ee-field"><span>URL de imagen</span><ValueInput label="URL de imagen" value={block.src} mode={block.srcMode??(block.src.includes("${")?"dynamic":"text")} options={varOptions} onChange={(value,mode)=>patch({src:value,srcMode:mode})}/></div>
-            <label className="ee-field"><span>Texto alternativo</span><input className="ee-input" value={block.alt} onChange={event => patch({ alt: event.target.value })} /></label>
-            <label className="ee-field"><span>Ancho (px)</span><input className="ee-input" type="number" value={block.width} onChange={event => patch({ width: event.target.value })} /></label>
-          </>}
+          {block.type === "image" && <ImageInspector key={block.id} block={block} options={varOptions} onUploadImage={onUploadImage} onPatch={patch} />}
           {block.type === "spacer" && <label className="ee-field"><span>Alto (px)</span><input className="ee-input" type="number" value={block.height} onChange={event => patch({ height: event.target.value })} /></label>}
           {block.type === "divider" && <label className="ee-field"><span>Color</span><input className="ee-input" type="color" value={block.color} onChange={event => patch({ color: event.target.value })} /></label>}
           {block.type === "loop" && <div className="ee-field"><span>Lista</span>

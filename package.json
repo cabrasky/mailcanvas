@@ -1,6 +1,6 @@
 {
   "name": "mailcanvas",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Figma-feel visual block editor for HTML email templates, with live Thymeleaf variable binding and a drag-and-drop canvas, as an embeddable React component.",
   "keywords": [
     "email editor",

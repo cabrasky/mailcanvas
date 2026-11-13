@@ -7,6 +7,15 @@ const instance:ComponentInstance={componentKey:definition.key,name:definition.na
 const tokens=[{token:"{{nombre}}",label:"Nombre",varName:"nombre",sample:"Lucía"}];
 const render=(source:string,components=[definition])=>new DOMParser().parseFromString(renderEmail(source,tokens,"",{components}).html,"text/html");
 describe("linked email components",()=>{
+  it("preserves invalid numeric metadata without exporting an invented zero",()=>{
+    for (const value of ["", "not a number"]) {
+      const numeric:EmailComponent={...definition,properties:[{key:"quantity",label:"Cantidad",type:"number",defaultValue:"2"}]};
+      const source=componentHtml({...instance,properties:numeric.properties,values:{quantity:{mode:"literal",value}}},numeric);
+      const node=new DOMParser().parseFromString(source,"text/html").body.firstElementChild!;
+      expect(node.getAttribute("th:with")).toBe("quantity=null");
+      expect(JSON.parse(node.getAttribute("data-ee-component-values")!).quantity.value).toBe(value);
+    }
+  });
   it("keeps literal numeric properties numeric during rendering",()=>{
     const numeric:EmailComponent={...definition,html:'<p th:text="${quantity + 1}"></p>',properties:[{key:"quantity",label:"Cantidad",type:"number",defaultValue:"2"}]};
     const source=componentHtml({...instance,properties:numeric.properties,fallbackHtml:numeric.html});

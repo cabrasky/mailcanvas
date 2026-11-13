@@ -114,7 +114,7 @@ Se ha eliminado **Dividir en dos tablas**. La combinación de fuentes se configu
 
 ## 7. Componentes compartidos
 
-La demo incluye cabecera, pie legal, botón de acción, aviso y firma. En **Insertar → Componentes**, pulsa una tarjeta para añadir una instancia.
+La demo incluye cabecera, pie legal, botón de acción, aviso, firma, imagen de campaña e indicador numérico. En **Insertar → Componentes**, pulsa una tarjeta para añadir una instancia.
 
 ![Catálogo](screenshots/13-componentes.png)
 
@@ -161,6 +161,6 @@ Los inputs y controles de modo tienen nombres accesibles, foco visible y estados
 
 ## 10. Guardado y límites
 
-Guardar, enviar pruebas y renderizar en servidor son callbacks simulados. Documentos y biblioteca viven en memoria: recargar reinicia la demo. No hay autoguardado persistente ni sincronización entre pestañas.
+Guardar conserva el correo activo, sus datos y la biblioteca en este navegador. No hay autoguardado ni sincronización entre pestañas. Probar funciones permite simular errores de guardado, editar datos, importar y exportar. No existe un servidor de correo conectado y no se envían mensajes. Las imágenes subidas son temporales de la sesión; la integración real debe proporcionar su almacenamiento.
 
 La preview implementa un subconjunto de Thymeleaf; no ejecuta todo SpringEL ni el dialecto Layout completo. Antes de enviar, valida el resultado con el motor del servidor y los clientes de correo objetivo.

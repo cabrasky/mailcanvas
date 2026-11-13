@@ -189,7 +189,7 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
   }
   if (block.type === "image") {
     const src=block.srcMode !== "text" ? resolveCellTemplate(block.src,ctx.tokens,locals) : block.src;
-    const looksReal = /^https?:\/\//.test(src);
+    const looksReal = /^(https?:\/\/|blob:|\/(?!\/))/i.test(src);
     return looksReal
       ? <img {...props} src={src} alt={block.alt} style={{ maxWidth: "100%", width: block.width ? `${block.width}px` : undefined, ...blockStyle(block) }} draggable={false} />
       : <div {...props} className={`${props.className} ee-render-image-missing`} style={blockStyle(block)}><span>▧</span>{block.alt || "Imagen"}</div>;
@@ -272,9 +272,10 @@ function StaticBlock({ block, locals, tokens }: { block: EmailBlock; locals: Rec
     return <div style={{ ...style, padding: "4px 0" }}><span className="ee-render-button">{text}</span></div>;
   }
   if (block.type === "image") {
-    const looksReal = /^https?:\/\//.test(block.src);
-    return <div style={style}>{looksReal
-      ? <img src={block.src} alt={block.alt} style={{ maxWidth: "100%", width: block.width ? `${block.width}px` : undefined }} draggable={false} />
+    const src = block.srcMode !== "text" ? resolveCellTemplate(block.src, tokens, locals) : block.src;
+    const looksReal = /^(https?:\/\/|blob:|\/(?!\/))/i.test(src);
+    return <div>{looksReal
+      ? <img src={src} alt={block.alt} style={{ maxWidth: "100%", width: block.width ? `${block.width}px` : undefined, ...style }} draggable={false} />
       : <div className="ee-render-image-missing"><span>▧</span>{block.alt || "Imagen"}</div>}</div>;
   }
   if (block.type === "divider") return <div style={style}><hr style={{ border: 0, borderTop: `1px solid ${block.color}`, margin: "12px 0" }} /></div>;

@@ -90,7 +90,10 @@ const [maximized, setMaximized] = useState(false);
 | `maximized` | Estado controlado por el padre |
 | `onMaximizedChange` | Notifica la intención de cambiar de tamaño |
 | `navigation` | ReactNode para selector de correos u otras acciones |
-| `onSave`, `onReset`, `onSendTest`, `onServerPreview` | Acciones opcionales sin parámetros |
+| `onSave` | Guardado opcional; admite `void`, `boolean` o `Promise<void \| boolean>`. Se espera su resolución. Devuelve `false` si el host ya ha gestionado un error o una validación. |
+| `onReset`, `onSendTest`, `onServerPreview` | Acciones opcionales sin parámetros |
+| `onUploadImage` | `(file: File) => Promise<string>`: sube una imagen usando el almacenamiento del host y devuelve su URL permanente. Sin este callback se mantiene la entrada manual por URL. |
+| `dirty` | Estado pendiente opcional controlado por el host, útil cuando también cambian el asunto, los datos o propiedades ajenas al HTML. El host lo limpia cuando confirma el guardado. |
 
 Con `maximized` controlado, el padre debe actualizar la propiedad para aplicar el cambio. No combines un estado controlado con la expectativa de que el editor lo cambie por su cuenta. Al minimizar, se restaura el tamaño del contenedor; al desmontar, se libera el bloqueo de scroll usado al maximizar.
 

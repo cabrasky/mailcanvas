@@ -25,6 +25,10 @@ En modo literal, `ComponentProperty.type` determina el control: `text`, `number`
 
 En Diseño, texto y fondo comparten el selector de color de las propiedades. Tamaño, espaciado, radio, ancho máximo y separación de grupos usan campos numéricos con unidades. El botón CSS permite editar valores compuestos o expresiones como `12px 24px` y `calc(100% - 40px)`; los valores importados no se reemplazan automáticamente al abrir el inspector. La alineación expone botones con nombre y estado seleccionado accesibles.
 
+Los números vacíos o inválidos conservan su valor original en los metadatos y se exportan como `null`, sin inventar un cero. El inspector avisa de valores numéricos inválidos.
+
+El guardado espera al callback del host; un rechazo o `false` muestra el error y conserva el estado pendiente. Si se edita durante la petición, su finalización no marca esas ediciones posteriores como guardadas. El bloque Imagen admite URL, aviso de carga fallida, anchura adaptable y subida mediante `onUploadImage`.
+
 El código editable conserva referencias `data-ee-component` y parámetros `data-ee-component-values`. El respaldo incluye HTML y asignaciones Thymeleaf `th:with`. Al renderizar, las referencias se resuelven con la biblioteca actual. El render final de ejemplo evalúa esas asignaciones y los campos de la plantilla; los atributos `data-ee-*` son metadatos del editor, no llamadas a una API de Yambo.
 
 Esto permite reabrir el documento conservando referencias, recuperar un componente no disponible con su respaldo y actualizar originales sin sobreescribir los valores locales. No constituye una implementación de todo el dialecto Layout de Thymeleaf.

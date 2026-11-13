@@ -39,7 +39,7 @@ La galería HTML se puede abrir directamente desde el disco. `artifacts/visual/`
 - Campos compartidos T | ƒ para texto literal o `${variable}`, cálculos y texto interpolado.
 - Tablas con columnas configurables y varias fuentes de filas bajo una misma cabecera.
 - Componentes vinculados a originales compartidos, propiedades locales y restablecimiento.
-- Tres correos de demo: pedido confirmado, bienvenida y actualización de envío.
+- Seis correos de demo, siete componentes compartidos y un laboratorio con guardado local, fallos simulados, datos estructurados e importación/exportación. Consulta [la guía de la demo](docs/DEMO.md).
 - Vista previa aislada con opciones de escritorio y móvil.
 
 ```text
