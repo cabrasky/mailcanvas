@@ -1,6 +1,7 @@
 name: Publish npm package
-# Re-saved to force GitHub to re-scan this workflow file.
 on:
+  push:
+    tags: ["v*.*.*"]
   release:
     types: [published]
   workflow_dispatch:
@@ -26,7 +27,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      PUBLISH_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      PUBLISH_TAG: ${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
         with:

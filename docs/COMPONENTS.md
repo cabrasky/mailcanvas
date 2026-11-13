@@ -21,6 +21,10 @@ Solo se ha leído este proyecto. No se han modificado archivos, datos ni APIs de
 
 Las propiedades sin personalizar siguen los valores actuales de la biblioteca. Una propiedad personalizada puede ser un literal o una expresión evaluada con el contexto del correo. Restablecerla elimina la personalización, por lo que vuelve a seguir el original. La biblioteca es compartida por todos los correos de la demo; los documentos mantienen sus propias instancias.
 
+En modo literal, `ComponentProperty.type` determina el control: `text`, `number`, `boolean`, `url`, `email`, `image`, `date`, `datetime` o `color`. Las imágenes usan una URL con vista previa; los colores incluyen selector y hexadecimal; las fechas usan calendarios nativos. `datetime` conserva el formato visible `dd/MM/yyyy HH:mm` al editar valores existentes. Los números se exportan como literales numéricos para conservar su comportamiento en cálculos. El modo ƒ mantiene las expresiones y su autocompletado para todos los tipos.
+
+En Diseño, texto y fondo comparten el selector de color de las propiedades. Tamaño, espaciado, radio, ancho máximo y separación de grupos usan campos numéricos con unidades. El botón CSS permite editar valores compuestos o expresiones como `12px 24px` y `calc(100% - 40px)`; los valores importados no se reemplazan automáticamente al abrir el inspector. La alineación expone botones con nombre y estado seleccionado accesibles.
+
 El código editable conserva referencias `data-ee-component` y parámetros `data-ee-component-values`. El respaldo incluye HTML y asignaciones Thymeleaf `th:with`. Al renderizar, las referencias se resuelven con la biblioteca actual. El render final de ejemplo evalúa esas asignaciones y los campos de la plantilla; los atributos `data-ee-*` son metadatos del editor, no llamadas a una API de Yambo.
 
 Esto permite reabrir el documento conservando referencias, recuperar un componente no disponible con su respaldo y actualizar originales sin sobreescribir los valores locales. No constituye una implementación de todo el dialecto Layout de Thymeleaf.

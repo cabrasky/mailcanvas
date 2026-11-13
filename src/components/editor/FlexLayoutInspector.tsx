@@ -1,3 +1,4 @@
+import { LengthInput } from "./StyleInputs";
 type Props = { styles: Record<string, string>; onChange: (styles: Record<string, string>) => void };
 
 export default function FlexLayoutInspector({ styles, onChange }: Props) {
@@ -16,7 +17,7 @@ export default function FlexLayoutInspector({ styles, onChange }: Props) {
             <option value="row">Horizontal</option><option value="column">Vertical</option>
           </select>
         </label>
-        <label className="ee-field"><span>Espaciado entre elementos</span><input className="ee-input" value={styles.gap ?? ""} onChange={event => update("gap", event.target.value)} placeholder="12px" /></label>
+        <LengthInput label="Espaciado entre elementos" value={styles.gap ?? ""} onChange={value => update("gap", value)} />
         <label className="ee-field"><span>Distribución horizontal</span>
           <select className="ee-select" value={styles.justifyContent ?? "flex-start"} onChange={event => update("justifyContent", event.target.value)}>
             <option value="flex-start">Inicio</option><option value="center">Centro</option><option value="space-between">Espacio entre</option><option value="space-around">Espacio alrededor</option><option value="flex-end">Final</option>

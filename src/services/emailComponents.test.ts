@@ -7,6 +7,11 @@ const instance:ComponentInstance={componentKey:definition.key,name:definition.na
 const tokens=[{token:"{{nombre}}",label:"Nombre",varName:"nombre",sample:"Lucía"}];
 const render=(source:string,components=[definition])=>new DOMParser().parseFromString(renderEmail(source,tokens,"",{components}).html,"text/html");
 describe("linked email components",()=>{
+  it("keeps literal numeric properties numeric during rendering",()=>{
+    const numeric:EmailComponent={...definition,html:'<p th:text="${quantity + 1}"></p>',properties:[{key:"quantity",label:"Cantidad",type:"number",defaultValue:"2"}]};
+    const source=componentHtml({...instance,properties:numeric.properties,fallbackHtml:numeric.html});
+    expect(render(source,[numeric]).querySelector("p")?.textContent).toBe("3");
+  });
   it("propagates original defaults while preserving per-instance overrides",()=>{
     const source=componentHtml(instance)+componentHtml({...instance,values:{title:{mode:"literal",value:"Mi título"}}});
     const changed={...definition,properties:definition.properties.map(prop=>prop.key==="title"?{...prop,defaultValue:"Nuevo título"}:prop)};

@@ -11,6 +11,7 @@ import FlexLayoutInspector from "./FlexLayoutInspector";
 import { getSampleObjectPaths } from "../../services/emailBlockActions";
 import type { EmailComponent } from "../../services/emailComponents";
 import ComponentInspector from "./ComponentInspector";
+import { ColorInput, LengthInput } from "./StyleInputs";
 
 type Props = {
   style?: React.CSSProperties;
@@ -134,18 +135,18 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
         <div className="ee-inspector-section-body">
 
           <div className="ee-row2">
-            <label className="ee-field"><span>Texto</span><input className="ee-input" value={block.styles?.color ?? ""} onChange={event => onPatch(block.id, { styles: { ...block.styles, color: event.target.value } })} placeholder="#172033" /></label>
-            <label className="ee-field"><span>Fondo</span><input className="ee-input" value={block.styles?.backgroundColor ?? ""} onChange={event => onPatch(block.id, { styles: { ...block.styles, backgroundColor: event.target.value } })} placeholder="#ffffff" /></label>
-            <label className="ee-field"><span>Tamaño</span><input className="ee-input" value={block.styles?.fontSize ?? ""} onChange={event => onPatch(block.id, { styles: { ...block.styles, fontSize: event.target.value } })} placeholder="16px" /></label>
-            <label className="ee-field"><span>Espaciado</span><input className="ee-input" value={block.styles?.padding ?? ""} onChange={event => onPatch(block.id, { styles: { ...block.styles, padding: event.target.value } })} placeholder="12px" /></label>
-            <label className="ee-field"><span>Radio</span><input className="ee-input" value={block.styles?.borderRadius ?? ""} onChange={event => onPatch(block.id, { styles: { ...block.styles, borderRadius: event.target.value } })} placeholder="8px" /></label>
-            <label className="ee-field"><span>Ancho máx.</span><input className="ee-input" value={block.styles?.maxWidth ?? ""} onChange={event => onPatch(block.id, { styles: { ...block.styles, maxWidth: event.target.value } })} placeholder="600px" /></label>
+            <div className="ee-field"><span>Texto</span><ColorInput label="Color del texto" value={block.styles?.color ?? ""} onChange={color => patch({ styles: { ...block.styles, color } })} placeholder="#172033" /></div>
+            <div className="ee-field"><span>Fondo</span><ColorInput label="Color del fondo" value={block.styles?.backgroundColor ?? ""} onChange={backgroundColor => patch({ styles: { ...block.styles, backgroundColor } })} /></div>
+            <LengthInput label="Tamaño del texto" value={block.styles?.fontSize ?? ""} onChange={fontSize => patch({ styles: { ...block.styles, fontSize } })} placeholder="16px" />
+            <LengthInput label="Espaciado interior" value={block.styles?.padding ?? ""} onChange={padding => patch({ styles: { ...block.styles, padding } })} />
+            <LengthInput label="Radio de las esquinas" value={block.styles?.borderRadius ?? ""} onChange={borderRadius => patch({ styles: { ...block.styles, borderRadius } })} placeholder="8px" />
+            <LengthInput label="Ancho máximo" value={block.styles?.maxWidth ?? ""} onChange={maxWidth => patch({ styles: { ...block.styles, maxWidth } })} placeholder="600px" />
           </div>
           <div className="ee-field"><span>Alineación</span>
-            <div className="ee-alignment-control">
+            <div className="ee-alignment-control" role="group" aria-label="Alineación del texto">
               {([["left", "⇤", "Izquierda"], ["center", "↔", "Centrar"], ["right", "⇥", "Derecha"]] as const).map(([value, icon, name]) =>
                 <button key={value} className={block.styles?.textAlign === value ? "selected" : ""} aria-label={name} aria-pressed={block.styles?.textAlign === value}
-                  onClick={() => onPatch(block.id, { styles: { ...block.styles, textAlign: value } })}>{icon}</button>)}
+                  type="button" title={name} onClick={() => onPatch(block.id, { styles: { ...block.styles, textAlign: value } })}><span aria-hidden="true">{icon}</span><span>{name}</span></button>)}
             </div>
           </div>
 

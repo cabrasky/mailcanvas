@@ -1,6 +1,6 @@
 import { normalizeTemplateMarkup } from "./templateMarkup";
 import { templateExpression } from "./valueSyntax";
-export type ComponentProperty = {key:string;label:string;type:"text"|"url"|"color"|"boolean";defaultValue:string};
+export type ComponentProperty = {key:string;label:string;type:"text"|"url"|"color"|"boolean"|"number"|"email"|"image"|"date"|"datetime";defaultValue:string};
 export type ComponentValue = {mode:"literal"|"expression";value:string};
 export type EmailComponent = {key:string;name:string;description:string;category:string;html:string;properties:ComponentProperty[]};
 export type ComponentInstance = {componentKey:string;name:string;values:Record<string,ComponentValue>;fallbackHtml:string;properties:ComponentProperty[]};
@@ -10,7 +10,8 @@ export function componentHtml(instance:ComponentInstance,definition?:EmailCompon
   const properties=definition?.properties??instance.properties;
   const assignments=properties.filter(prop=>/^[\w$]+$/.test(prop.key)).map(prop=>{
     const value=instance.values[prop.key]??{mode:"literal",value:prop.defaultValue};
-    return `${prop.key}=${value.mode==="expression"?(value.value.includes("${")?templateExpression(value.value):value.value):prop.type==="boolean"?String(value.value==="true"):quote(value.value)}`;
+    const literal=prop.type==="boolean"?String(value.value==="true"):prop.type==="number"?String(Number.isFinite(Number(value.value))?Number(value.value):0):quote(value.value);
+    return `${prop.key}=${value.mode==="expression"?(value.value.includes("${")?templateExpression(value.value):value.value):literal}`;
   }).join(", ");
   return `<div data-ee-component="${escape(instance.componentKey)}" data-ee-component-name="${escape(definition?.name??instance.name)}" data-ee-component-values="${escape(JSON.stringify(instance.values))}" data-ee-component-properties="${escape(JSON.stringify(properties))}"${assignments?` th:with="${escape(assignments)}"`:""}>${definition?.html??instance.fallbackHtml}</div>`;
 }
