@@ -138,7 +138,7 @@ El modo Código carga Monaco de forma diferida. Sus workers están incluidos en 
 
 Es un editor orientado al navegador. Para frameworks con render de servidor, móntalo en un límite cliente o después de la hidratación: el parser de bloques y la preview necesitan APIs DOM. No se promete hidratación idéntica entre un servidor sin DOM y el navegador.
 
-El formato de distribución es ESM; no hay entrada CommonJS. Los cambios de la demo siguen viviendo en memoria: convertirlo en librería no añade persistencia ni llamadas a Yambo.
+El formato de distribución es ESM; no hay entrada CommonJS. El host controla la persistencia del componente. La demo implementa guardado local propio con localStorage.
 
 ## Salidas y comprobaciones
 

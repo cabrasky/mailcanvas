@@ -162,7 +162,7 @@ describe("EmailEditor", () => {
     const onChange = vi.fn();
     render(<EmailEditor value="" onChange={onChange} tokens={[token, products]} />);
     fireEvent.click(screen.getByRole("button", { name: /tabla/i }));
-    const header = screen.getByRole("columnheader", { name: "name" });
+    const header = within(screen.getByRole("region", { name: "Lienzo del correo" })).getByRole("columnheader", { name: "name" });
     fireEvent.doubleClick(header);
     const input = within(header).getByDisplayValue("name");
     fireEvent.change(input, { target: { value: "Producto" } });

@@ -1,86 +1,99 @@
-import React, { useRef, useState } from "react";
-import type { EmailBlock, InlineNode } from "../../services/emailBlocks";
-import { tableRowGroups } from "../../services/tableRows";
+import {useEffect,useMemo,useRef,useState} from "react";
+import type {EmailBlock} from "../../services/emailBlocks";
+import {tableRowGroups} from "../../services/tableRows";
+import {blockChildren,canDropLayer,layerGlyphs,layerIndex,layerName,layerTypes} from "../../editor/selectionModel";
+import SelectionPath from "./SelectionPath";
 
-type Props = {
-  blocks: EmailBlock[]; selectedIds: Set<string>;
-  onSelect: (id: string, additive: boolean) => void; onSelectTableField: (id: string, field: string) => void;
-  onMove: (id: string, delta: -1 | 1) => void; onDelete: (id: string) => void;
-  onReorder: (movingId: string, targetId: string, after: boolean) => void; onContextMenu: (id: string, x: number, y: number) => void;
+type Props={
+ blocks:EmailBlock[];selectedIds:Set<string>;
+ onSelect:(id:string,additive:boolean)=>void;onSelectTableField:(id:string,field:string)=>void;
+ onMove:(id:string,delta:-1|1)=>void;onDelete:(id:string)=>void;
+ onReorder:(movingId:string,targetId:string,after:boolean)=>void;
+ onMoveInto?:(movingId:string,parentId:string)=>void;
+ onContextMenu:(id:string,x:number,y:number)=>void;
 };
-const typeName: Record<EmailBlock["type"], string> = {
-  component:"Componente vinculado",
-  html: "HTML protegido", heading: "Título", paragraph: "Texto", rich: "Texto", variable: "Dato", button: "Botón", image: "Imagen",
-  divider: "Separador", spacer: "Espaciador", table: "Tabla", container: "Contenedor", loop: "Repetir", if: "Condición",
-};
-const glyph: Record<EmailBlock["type"], string> = { component: "◇", html: "<>", heading: "T", paragraph: "¶", rich: "¶", variable: "ƒ", button: "↗", image: "▧", divider: "—", spacer: "↕", table: "▦", container: "▱", loop: "⟳", if: "◇" };
-const inlineText = (nodes: InlineNode[]): string => nodes.map(node => node.type === "text" ? node.text : node.type === "variable" ? `\${${node.expression}}` : node.tag === "br" ? " · " : inlineText(node.children)).join("");
-const name = (block: EmailBlock): string => block.type === "component" ? `◇ ${block.name}` : block.type === "heading" || block.type === "paragraph" ? block.text : block.type === "rich" ? inlineText(block.children) || "Texto" : block.type === "variable" ? block.expression : block.type === "table" || block.type === "loop" ? block.collection : block.type === "if" ? block.variable : block.type === "button" ? block.text : block.type === "image" ? block.alt || "Imagen" : block.type === "container" ? block.className || (block.styles?.display === "flex" ? "Fila" : "Grupo") : typeName[block.type];
-const childrenOf = (block: EmailBlock): EmailBlock[] => block.type === "container" || block.type === "loop" || block.type === "if" ? block.children : [];
-const flatten = (blocks: EmailBlock[]): EmailBlock[] => blocks.flatMap(block => [block, ...flatten(childrenOf(block))]);
-const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-export default function LayerPanel({ blocks, selectedIds, onSelect, onSelectTableField, onMove, onDelete, onReorder, onContextMenu }: Props) {
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
-  const [query, setQuery] = useState("");
-  const all = flatten(blocks);
-  const matches = (block: EmailBlock): boolean => normalize(`${name(block)} ${typeName[block.type]} ${block.type === "table" ? block.fields.join(" ") : ""}`).includes(normalize(query.trim()));
-  const visible = (block: EmailBlock): boolean => matches(block) || childrenOf(block).some(visible);
-  const isCollapsed = (block: EmailBlock) => !query.trim() && collapsed.has(block.id);
-  const [dragging, setDragging] = useState<string | null>(null);
-  const dragBlocked=useRef(false);
-  const [dropTarget, setDropTarget] = useState<{ id: string; after: boolean } | null>(null);
-  const render = (items: EmailBlock[], depth = 0, loopId?: string): React.ReactNode => items.map((block, index) => !visible(block) ? null : <React.Fragment key={block.id}>
-    <div draggable data-ee-layer-id={block.id} className={`ee-layer-row ee-layer-draggable ${dragging===block.id?"dragging":""} ${selectedIds.has(block.id) ? "selected" : ""} ${dropTarget?.id === block.id ? (dropTarget.after ? "drop-after" : "drop-before") : ""}`} style={{ paddingLeft: 6 + depth * 14 }}
-      onPointerDown={event=>{dragBlocked.current=!!(event.target as HTMLElement).closest(".ee-tree-actions,.ee-layer-disclosure");}}
-      onDragStart={event=>{
-        if(dragBlocked.current){event.preventDefault();return;}
-        event.dataTransfer.setData("application/x-email-layer",block.id);event.dataTransfer.effectAllowed="move";setDragging(block.id);
+type Drop={id:string;edge:"before"|"after"|"into"};
+const normalize=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+export default function LayerPanel(props:Props) {
+ const {blocks,selectedIds,onSelect,onMove,onDelete,onSelectTableField,onReorder,onMoveInto,onContextMenu}=props;
+ const index=useMemo(()=>layerIndex(blocks),[blocks]);
+ const [collapsed,setCollapsed]=useState<Set<string>>(new Set());
+ const [query,setQuery]=useState("");
+ const [moving,setMoving]=useState<string|null>(null);
+ const [drop,setDrop]=useState<Drop|null>(null);
+ const tree=useRef<HTMLDivElement>(null);
+ const blocked=useRef(false);
+ const selectionKey=[...selectedIds].join("|");
+ useEffect(()=>{
+   setCollapsed(current=>{
+    const next=new Set(current);
+    for(const id of selectedIds)for(const ancestor of index.get(id)?.path.slice(0,-1) || [])next.delete(ancestor);
+    return next.size===current.size?current:next;
+   });
+ },[selectionKey,index]);
+ const matches=(block:EmailBlock)=>normalize(`${layerName(block)} ${layerTypes[block.type]} ${block.type==="table"?block.fields.join(" "):""}`).includes(normalize(query.trim()));
+ const visible=(block:EmailBlock):boolean=>matches(block)||blockChildren(block).some(visible);
+ const expanded=(block:EmailBlock)=>!!query.trim() || !collapsed.has(block.id);
+ const toggle=(id:string)=>setCollapsed(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next;});
+ const clearDrag=()=>{setMoving(null);setDrop(null);};
+ const focus=(id:string|undefined)=>{if(id)tree.current?.querySelector<HTMLElement>(`[data-ee-layer-id="${CSS.escape(id)}"]`)?.focus();};
+ const keyboard=(event:React.KeyboardEvent<HTMLDivElement>,block:EmailBlock)=>{
+   if(event.target!==event.currentTarget)return;
+   const entry=index.get(block.id)!;
+   const rows=Array.from(tree.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') || []);
+   const position=rows.indexOf(event.currentTarget);
+   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter"," ","Home","End"].includes(event.key)){event.preventDefault();event.stopPropagation();}
+   switch(event.key){
+    case "ArrowUp":rows[position-1]?.focus();break;
+    case "ArrowDown":rows[position+1]?.focus();break;
+    case "ArrowRight":if(!expanded(block))toggle(block.id);else focus(blockChildren(block)[0]?.id);break;
+    case "ArrowLeft":if(blockChildren(block).length && expanded(block))toggle(block.id);else focus(entry.parentId || undefined);break;
+    case "Enter":case " ":onSelect(block.id,event.shiftKey);break;
+    case "Home":rows[0]?.focus();break;
+    case "End":rows.at(-1)?.focus();break;
+   }
+ };
+ const render=(items:EmailBlock[]):React.ReactNode=>items.filter(visible).map(block=>{
+   const entry=index.get(block.id)!;
+   const children=blockChildren(block);
+   const hasChildren=children.length>0 || block.type === "table";
+   const selected=selectedIds.has(block.id);
+   return <div className="ee-layer-node" key={block.id}>
+    <div role="treeitem" aria-label={`${layerTypes[block.type]} · ${layerName(block)}`} aria-level={entry.depth+1} aria-selected={selected}
+      aria-expanded={hasChildren?expanded(block):undefined} aria-posinset={entry.index+1} aria-setsize={entry.siblingCount}
+      tabIndex={selected || !selectedIds.size && entry.index===0 && entry.depth===0?0:-1}
+      draggable data-ee-layer-id={block.id} style={{paddingLeft:6+entry.depth*14}}
+      className={`ee-layer-row ee-layer-draggable ${selected?"selected":""} ${moving===block.id?"dragging":""} ${drop?.id===block.id?`drop-${drop.edge}`:""}`}
+      onKeyDown={event=>keyboard(event,block)}
+      onPointerDown={event=>{blocked.current=!!(event.target as HTMLElement).closest('.ee-tree-actions,.ee-layer-disclosure');}}
+      onDragStart={event=>{event.stopPropagation();if(blocked.current){event.preventDefault();return;}event.dataTransfer.setData("application/x-email-layer",block.id);event.dataTransfer.effectAllowed="move";setMoving(block.id);onSelect(block.id,false);}}
+      onDragEnd={clearDrag}
+      onDragOver={event=>{
+        event.stopPropagation();if(!moving || !canDropLayer(index,moving,block.id))return;
+        event.preventDefault();const box=event.currentTarget.getBoundingClientRect();const y=(event.clientY-box.top)/box.height;
+        setDrop({id:block.id,edge:onMoveInto && ["container","if","loop"].includes(block.type) && y>0.25 && y<0.75?"into":y<0.5?"before":"after"});
       }}
-      onDragEnd={()=>{setDragging(null);setDropTarget(null);}}
-      onDragOver={event => {
-        if (!dragging || dragging === block.id) return;
-        event.preventDefault();
-        const rect = event.currentTarget.getBoundingClientRect();
-        setDropTarget({ id: block.id, after: event.clientY > rect.top + rect.height / 2 });
-      }}
-      onDragLeave={() => setDropTarget(current => current?.id === block.id ? null : current)}
-      onContextMenu={event => { event.preventDefault(); event.stopPropagation(); onSelect(block.id, false); onContextMenu(block.id, event.clientX, event.clientY); }}
-      onDrop={event => {
-        event.preventDefault();
-        const source = event.dataTransfer.getData("application/x-email-layer");
-        if (source && source !== block.id) onReorder(source, block.id, dropTarget?.after ?? false);
-        setDragging(null); setDropTarget(null);
-      }}>
-      <button className="ee-layer-grip" aria-label={`Arrastrar ${name(block)} para reordenar`} title="Puedes arrastrar desde cualquier parte de la fila" onClick={event=>onSelect(block.id,event.shiftKey)}>⠿</button>
-      {(block.type === "container" || block.type === "loop" || block.type === "if" || block.type === "table") ? <button className="ee-layer-disclosure" aria-label={`${isCollapsed(block) ? "Expandir" : "Contraer"} ${name(block)}`} aria-expanded={!isCollapsed(block)} disabled={!!query.trim()}
-          onClick={event => { event.stopPropagation(); setCollapsed(current => { const next = new Set(current); if (next.has(block.id)) next.delete(block.id); else next.add(block.id); return next; }); }}>
-          {isCollapsed(block) ? "›" : "⌄"}
-        </button> : <span className="ee-layer-disclosure" />}
-      <button className="ee-layer-select" aria-pressed={selectedIds.has(block.id)} onClick={event => onSelect(block.id, event.shiftKey)} title={`${typeName[block.type]} · ${name(block)}`}>
-        <span className={`ee-tree-glyph glyph-${block.type}`}>{glyph[block.type]}</span><span className="ee-tree-name">{name(block)}</span>
-      </button>
-      <div className="ee-tree-actions">
-        <button aria-label="Mover arriba" title="Subir" disabled={!index} onClick={() => onMove(block.id, -1)}>↑</button>
-        <button aria-label="Mover abajo" title="Bajar" disabled={index === items.length - 1} onClick={() => onMove(block.id, 1)}>↓</button>
-        <button aria-label="Eliminar" title="Eliminar" onClick={() => onDelete(block.id)}>×</button>
-      </div>
+      onDragLeave={event=>{if(!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget))setDrop(current=>current?.id===block.id?null:current);}}
+      onDrop={event=>{event.preventDefault();event.stopPropagation();const source=event.dataTransfer.getData("application/x-email-layer");if(drop?.id===block.id && canDropLayer(index,source,block.id)){if(drop.edge==="into")onMoveInto?.(source,block.id);else onReorder(source,block.id,drop.edge==="after");}clearDrag();}}
+      onContextMenu={event=>{event.preventDefault();event.stopPropagation();onSelect(block.id,false);onContextMenu(block.id,event.clientX,event.clientY);}}>
+      <button type="button" className="ee-layer-grip" aria-label={`Arrastrar ${layerName(block)} para reordenar`} onClick={event=>onSelect(block.id,event.shiftKey)}>⠿</button>
+      {hasChildren?<button type="button" className="ee-layer-disclosure" aria-label={`${expanded(block)?"Contraer":"Expandir"} ${layerName(block)}`} aria-expanded={expanded(block)} disabled={!!query.trim()} onClick={()=>toggle(block.id)}>{expanded(block)?"⌄":"›"}</button>:<span className="ee-layer-disclosure"/>}
+      <button type="button" className="ee-layer-select" aria-pressed={selected} title={`${layerTypes[block.type]} · ${layerName(block)}`} onClick={event=>onSelect(block.id,event.shiftKey)}><span className={`ee-tree-glyph glyph-${block.type}`}>{layerGlyphs[block.type]}</span><span className="ee-tree-name">{layerName(block)}<small>{layerTypes[block.type]}</small></span></button>
+      <div className="ee-tree-actions"><button type="button" aria-label="Mover arriba" disabled={entry.index===0} onClick={()=>onMove(block.id,-1)}>↑</button><button type="button" aria-label="Mover abajo" disabled={entry.index===entry.siblingCount-1} onClick={()=>onMove(block.id,1)}>↓</button><button type="button" aria-label="Eliminar" onClick={()=>onDelete(block.id)}>×</button></div>
     </div>
-    {block.type === "table" && !isCollapsed(block) && block.fields.map(field => <button key={`${block.id}-cell-${field}`} className="ee-layer-row ee-layer-structural" style={{ paddingLeft: 6 + (depth + 1) * 14 }}
-      onClick={() => onSelectTableField(block.id, field)} title={`Seleccionar columna ${field}`}>
-      <span className="ee-layer-grip">⌞</span><span className="ee-tree-glyph">▦</span><span className="ee-tree-name">{block.columnLabels?.[field] || field} <small>· {block.columnFormats?.[field]?.type === "currency" ? "Moneda" : block.columnFormats?.[field]?.type === "number" ? "Número" : "Original"}</small></span>
-    </button>)}
-    {block.type === "table" && !isCollapsed(block) && tableRowGroups(block).map((row,index)=><div className="ee-table-layer-group" key={row.id} style={{paddingLeft:12+(depth+1)*14}}>
-      <button className="ee-layer-select" onClick={()=>onSelect(block.id,false)} title="Editar las fuentes y valores en Diseño de tabla"><span className="ee-tree-glyph">{row.type === "repeat" ? "⟳" : "−"}</span><span className="ee-tree-name">{index+1}. {row.type === "repeat" ? `Repetir · ${row.collection}` : "Fila única"}</span></button>
-      {block.fields.map(field=><button className="ee-table-layer-cell" key={field} onClick={()=>onSelectTableField(block.id,field)} title={`${block.columnLabels?.[field] || field}: ${row.cells[field]?.value ?? "Vacío"}`}>{block.columnLabels?.[field] || field} ← {row.cells[field]?.mode === "expression" ? "ƒ " : ""}{row.cells[field]?.value || "Vacío"}</button>)}
-    </div>)}
-    {(block.type === "container" || block.type === "loop" || block.type === "if") && !isCollapsed(block) && render(block.children, depth + 1, block.type === "loop" ? block.id : loopId)}
-  </React.Fragment>);
-  return <section className="ee-layers-panel" aria-label="Capas">
-    <div className="ee-library-intro"><strong>Estructura del correo</strong><p>Selecciona una capa para editarla en el lienzo.</p></div>
-    <div className="ee-panel-search"><span aria-hidden="true">⌕</span><input type="search" aria-label="Buscar capas" placeholder="Buscar texto, tipo o variable…" value={query} onChange={event => setQuery(event.target.value)} /></div>
-    <div className="ee-layer-tools"><span>{all.length} capas</span><button disabled={!!query.trim()} onClick={() => setCollapsed(new Set())}>Expandir todo</button><button disabled={!!query.trim()} onClick={() => setCollapsed(new Set(all.filter(block => childrenOf(block).length || block.type === "table").map(block => block.id)))}>Contraer todo</button></div>
-    <div className="ee-layer-tree">{!blocks.length ? <p className="ee-empty-hint">El lienzo todavía está vacío. Añade un bloque desde Insertar.</p> : !blocks.some(visible) ? <p className="ee-empty-hint">No hay capas para «{query}».</p> : render(blocks)}</div>
-    <footer className="ee-layers-footer">{query.trim() ? `${all.filter(matches).length} coincidencias` : selectedIds.size ? `${selectedIds.size} seleccionadas · Mayús + clic para añadir` : "Arrastra cualquier fila para reordenar"}</footer>
-  </section>;
+    {block.type === "table" && expanded(block) && <div className="ee-layer-table-structure" style={{paddingLeft:18+(entry.depth+1)*14}}>
+      {block.fields.map(field=><button type="button" key={field} className="ee-layer-structural" onClick={()=>onSelectTableField(block.id,field)}>▦ {block.columnLabels?.[field] || field} · {block.columnFormats?.[field]?.type || "text"}</button>)}
+      {tableRowGroups(block).map((row,rowIndex)=><details key={row.id} className="ee-layer-source"><summary>{rowIndex+1}. {row.type === "repeat"?`Repetir · ${row.collection}`:"Fila única"}</summary>{block.fields.map(field=><button type="button" key={field} onClick={()=>onSelectTableField(block.id,field)}>{block.columnLabels?.[field] || field} ← {row.cells[field]?.value || "Vacío"}</button>)}</details>)}
+    </div>}
+    {expanded(block) && render(children)}
+   </div>;
+ });
+ return <section className="ee-layers-panel" aria-label="Capas">
+   <div className="ee-library-intro"><strong>Estructura del correo</strong></div>
+   <SelectionPath blocks={blocks} selectedIds={selectedIds} onSelect={onSelect}/>
+   <div className="ee-panel-search"><span aria-hidden="true">⌕</span><input type="search" aria-label="Buscar capas" placeholder="Buscar texto, tipo o variable…" value={query} onChange={event=>setQuery(event.target.value)}/></div>
+   <div className="ee-layer-tools"><span>{index.size} capas</span><button type="button" disabled={!!query.trim()} onClick={()=>setCollapsed(new Set())}>Expandir todo</button><button type="button" disabled={!!query.trim()} onClick={()=>setCollapsed(new Set([...index.values()].filter(entry=>blockChildren(entry.block).length || entry.block.type==="table").map(entry=>entry.block.id)))}>Contraer todo</button></div>
+   <div className="ee-layer-tree" ref={tree} role="tree" aria-label="Árbol de capas" aria-multiselectable="true">{blocks.some(visible)?render(blocks):<p className="ee-empty-hint">{blocks.length?`No hay capas para «${query}».`:"Añade un bloque desde Insertar."}</p>}</div>
+   <footer className="ee-layers-footer" aria-live="polite">{drop && index.has(drop.id)?`${drop.edge==="into"?"Dentro de":drop.edge==="before"?"Antes de":"Después de"} ${layerName(index.get(drop.id)!.block)}`:query?`${[...index.values()].filter(entry=>matches(entry.block)).length} coincidencias`:`${selectedIds.size} seleccionadas · Mayús + clic para añadir`}</footer>
+ </section>;
 }

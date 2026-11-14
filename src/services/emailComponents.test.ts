@@ -67,3 +67,20 @@ describe("linked email components",()=>{
     expect(doc.querySelector("section p")?.textContent).toBe("${nombre}");
   });
 });
+
+it("fits component backgrounds to resized frames and restores original fallback styles",()=>{
+  const source=emailBlocksToHtml([{id:'resized',type:'component',...instance,styles:{width:'360px',height:'200px'}}],{components:[{...definition,html:'<div style="padding:24px;background:#eff2ff"><strong>Cabecera</strong></div>'}]});
+  const parsed=new DOMParser().parseFromString(source,'text/html');
+  const root=parsed.querySelector<HTMLElement>('[data-ee-component] > div')!;
+  expect(root.style.height).toBe('100%');
+  expect(root.style.width).toBe('100%');
+  expect(root.style.boxSizing).toBe('border-box');
+  const reopened=parseEmailHtmlToBlocks(source)[0];
+  expect(reopened.type).toBe('component');
+  if(reopened.type!=='component')throw new Error('Expected component');
+  expect(reopened.fallbackHtml).not.toContain('data-ee-fit-original-style');
+  const reset=emailBlocksToHtml([{...reopened,styles:{}}]);
+  const resetRoot=new DOMParser().parseFromString(reset,'text/html').querySelector<HTMLElement>('[data-ee-component] > div')!;
+  expect(resetRoot.style.height).toBe('');
+  expect(resetRoot.style.padding).toBe('24px');
+});

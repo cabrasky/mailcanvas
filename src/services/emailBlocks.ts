@@ -1,7 +1,8 @@
+import { boxStyles } from "../editor/blockLayout";
 import { normalizeTemplateMarkup } from "./templateMarkup";
 import type { EmailToken } from "./emailTemplateRenderer";
 import { tableRowGroups, columnExpression } from "./tableRows";
-import { componentHtml, readComponent, type ComponentInstance, type EmailComponent } from "./emailComponents";
+import { componentFrameStyles, componentHtml, readComponent, type ComponentInstance, type EmailComponent } from "./emailComponents";
 import { templateExpression } from "./valueSyntax";
 
 export type TableCell = { mode: "text" | "expression" | "template"; value: string };
@@ -124,7 +125,7 @@ export function createEmailBlock(type: BlockKind, tokens: EmailToken[], id: stri
 
 function attributesFor(block: EmailBlock, extra: Record<string, string> = {}, editorMetadata = false) {
   const className = [block.className, extra.class].filter(Boolean).join(" ");
-  const styles = { ...(block.styles ?? {}) };
+  const styles = block.type === "container" || block.type === "if" ? boxStyles(block.styles) : { ...(block.styles ?? {}) };
   const styleText = Object.entries(styles)
     .filter(([property, value]) => /^(?:--[\w-]+|[a-zA-Z-]+)$/.test(property) && value && !/expression\s*\(|javascript:/i.test(value))
     .map(([property, value]) => `${property.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}:${value}`)
@@ -176,7 +177,7 @@ export function emailBlocksToHtml(blocks: EmailBlock[], options: { editorMetadat
   collectClassRules(blocks);
   const markup = blocks.map(block => {
     switch (block.type) {
-      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey), attributesFor({...block,attributes:Object.fromEntries(Object.entries(block.attributes || {}).filter(([name])=>!name.startsWith("data-ee-component") && name!=="th:with"))}, {}, !!options.editorMetadata));
+      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey), attributesFor({...block,styles:componentFrameStyles(block,options.components?.find(component=>component.key===block.componentKey)),attributes:Object.fromEntries(Object.entries(block.attributes || {}).filter(([name])=>!name.startsWith("data-ee-component") && name!=="th:with"))}, {}, !!options.editorMetadata));
       case "html": return block.html;
       case "heading": {
         const level = block.level ?? 2;

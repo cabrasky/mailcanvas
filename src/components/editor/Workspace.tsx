@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import SelectionPath from "./SelectionPath";
+import { useCanvasViewport } from "../../editor/useCanvasViewport";
 import type { EmailBlock } from "../../services/emailBlocks";
 import type { EmailToken } from "../../services/emailTemplateRenderer";
 import type { EmailComponent } from "../../services/emailComponents";
@@ -50,88 +51,9 @@ export default function Workspace({
   onTableColumnWidthChange, onTableColumnLabelChange, onEditVariableExpression,
   canMergeTableCells, canUnmergeTableCells, onMergeTableCells, onUnmergeTableCells,
 }: Props) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const layerRef = useRef<HTMLDivElement>(null);
-  const [spacePanning, setSpacePanning] = useState(false);
-  const panDrag = useRef<{ startX: number; startY: number; startPan: Pan } | null>(null);
-
-  useEffect(() => {
-    const down = (event: KeyboardEvent) => { if (event.code === "Space" && !(event.target as HTMLElement)?.isContentEditable) setSpacePanning(true); };
-    const up = (event: KeyboardEvent) => { if (event.code === "Space") setSpacePanning(false); };
-    window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
-  }, []);
-
-  const dragPayload = drag?.payload;
-  useEffect(() => {
-    if (!dragPayload) return;
-    const move = (event: PointerEvent) => {
-      const target = document.elementFromPoint(event.clientX, event.clientY);
-      const blockEl = target?.closest<HTMLElement>("[data-ee-block-id]");
-      if (!blockEl) { onDragHover(null, "before"); return; }
-      const id = blockEl.dataset.eeBlockId!;
-      const kind = blockEl.dataset.eeBlockKind!;
-      if (dragPayload.type === "move" && id === dragPayload.id) { onDragHover(null, "before"); return; }
-      const rect = blockEl.getBoundingClientRect();
-      const canContain = kind === "container" || kind === "loop" || kind === "if";
-      const relY = (event.clientY - rect.top) / rect.height;
-      const edge: DragEdge = canContain && relY > 0.25 && relY < 0.75 ? "into" : relY < 0.5 ? "before" : "after";
-      onDragHover(id, edge);
-    };
-    const up = () => onDragCommit();
-    const cancelOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onDragCancel(); };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up, { once: true });
-    window.addEventListener("keydown", cancelOnEscape);
-    return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("keydown", cancelOnEscape);
-    };
-  }, [dragPayload, onDragHover, onDragCommit, onDragCancel]);
-
-  const handleWheel = (event: React.WheelEvent) => {
-    if (event.ctrlKey || event.metaKey) {
-      event.preventDefault();
-      const rect = viewportRef.current!.getBoundingClientRect();
-      const cx = event.clientX - rect.left, cy = event.clientY - rect.top;
-      const nextZoom = Math.max(25, Math.min(300, zoom * (1 - event.deltaY * 0.0015)));
-      const factor = nextZoom / zoom;
-      onPanChange({ x: cx - (cx - pan.x) * factor, y: cy - (cy - pan.y) * factor });
-      onZoomChange(nextZoom);
-      return;
-    }
-    onPanChange({ x: pan.x - event.deltaX, y: pan.y - event.deltaY });
-  };
-
-  const beginPan = (event: React.PointerEvent) => {
-    if (!spacePanning && event.button !== 1) return;
-    event.preventDefault();
-    panDrag.current = { startX: event.clientX, startY: event.clientY, startPan: pan };
-    const move = (moveEvent: PointerEvent) => {
-      if (!panDrag.current) return;
-      onPanChange({ x: panDrag.current.startPan.x + moveEvent.clientX - panDrag.current.startX, y: panDrag.current.startPan.y + moveEvent.clientY - panDrag.current.startY });
-    };
-    const finish = () => { panDrag.current = null; window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", finish); };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", finish, { once: true });
-  };
-
-  const fitToScreen = () => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const bounds = viewport.getBoundingClientRect();
-    const pageHeight = layerRef.current?.querySelector(".ee-email-page")?.getBoundingClientRect().height ?? 700;
-    const fit = Math.min(1.4, Math.max(0.25, Math.min((bounds.width - 80) / 600, (bounds.height - 80) / (pageHeight / (zoom / 100)))));
-    onZoomChange(fit * 100);
-    onPanChange({ x: (bounds.width - 600 * fit) / 2, y: 40 });
-  };
-
-  const resetZoom = () => {
-    onPanChange({ x: ((viewportRef.current?.clientWidth ?? 780) - 600) / 2, y: pan.y });
-    onZoomChange(100);
-  };
+  const {viewportRef, layerRef, spacePanning, beginPan, fitToScreen, resetZoom} = useCanvasViewport({
+    zoom, pan, drag, onZoomChange, onPanChange, onDragHover, onDragCommit, onDragCancel,
+  });
 
   const contextValue: CanvasContextValue = {
     tokens, components, selectedIds, hoverId, editingId, tableSelection, drag,
@@ -153,8 +75,9 @@ export default function Workspace({
         </div>
       </div>
     </div>
+    <SelectionPath blocks={blocks} selectedIds={selectedIds} onSelect={onSelect} onClear={onClearSelection}/>
     <div ref={viewportRef} className={`ee-viewport ${spacePanning ? "panning" : ""}`}
-      onWheel={handleWheel} onPointerDown={beginPan}
+      onPointerDownCapture={beginPan}
       onClick={() => onClearSelection()}>
       <div ref={layerRef} className="ee-canvas-layer" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})` }}>
         <div className="ee-email-page"

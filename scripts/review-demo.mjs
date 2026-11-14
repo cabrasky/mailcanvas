@@ -17,6 +17,54 @@ try {
  const page=await browser.newPage({viewport:{width:1680,height:1100},locale:'es-ES'}); const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto(`http://127.0.0.1:${port}/`);await page.locator('.ee-email-page').waitFor();
  assert.equal(await page.getByLabel('Correo a editar').locator('option').count(),6);
+
+ if(process.argv.includes('--layers-only')) {
+   await page.getByRole('button',{name:'Probar funciones',exact:true}).click();
+   const dialog=page.getByRole('dialog',{name:'Prueba las funciones del editor'});
+   await dialog.getByRole('button',{name:'Archivos',exact:true}).click();
+   await dialog.getByLabel('Importar archivo de demo').setInputFiles({name:'layers.html',mimeType:'text/html',buffer:Buffer.from('<div class="grupo"><p>Hijo A</p></div><p>Hijo B</p>')});
+   await page.getByRole('tab',{name:'Capas',exact:true}).click();
+   const group=page.getByRole('treeitem',{name:'Grupo · grupo',exact:true});
+   const first=page.getByRole('treeitem',{name:'Texto · Hijo A',exact:true});
+   const second=page.getByRole('treeitem',{name:'Texto · Hijo B',exact:true});
+   await first.locator('.ee-layer-select').click();
+   const breadcrumbs=page.locator('.ee-workspace .ee-selection-path');
+   await breadcrumbs.getByRole('button',{name:'grupo',exact:true}).waitFor();
+   await breadcrumbs.getByRole('button',{name:'Hijo A',exact:true}).waitFor();
+   await breadcrumbs.getByRole('button',{name:'grupo',exact:true}).click();
+   assert.equal(await group.getAttribute('aria-selected'),'true');
+   await second.dragTo(group);
+   assert.equal(await second.getAttribute('aria-level'),'2');
+   await second.focus();await second.press('ArrowLeft');
+   assert.equal(await group.evaluate(el=>el===document.activeElement),true);
+   await group.locator('.ee-layer-select').click();
+   await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+   await page.getByRole('button',{name:'Editar padding arriba',exact:true}).click();
+   await page.getByRole('spinbutton',{name:'Padding Arriba',exact:true}).fill('24');
+   await page.locator('.ee-workspace-tip').filter({hasText:'Interior: 24px / 0px / 0px / 0px'}).waitFor();
+   await page.screenshot({path:path.join(output,'22-capas-ruta-caja.png')});
+   assert.deepEqual(errors,[]);console.log('Nested layers, drag into parent, keyboard path and box diagram passed');await browser.close();server.kill();process.exit(0);
+ }
+ if(process.argv.includes('--table-only')) {
+   const table=page.locator('.ee-email-page [data-ee-block-kind="table"]').first();
+   await table.locator('th').first().click();
+   const inspector=page.getByRole('region',{name:'Configurar tabla'});
+   await inspector.getByLabel('Nombre del nuevo campo').fill('extra');
+   await inspector.getByRole('button',{name:'＋ Columna',exact:true}).click();
+   await inspector.getByRole('button',{name:'Seleccionar columna extra',exact:true}).waitFor();
+   await inspector.getByRole('button',{name:'Seleccionar columna extra',exact:true}).dragTo(inspector.locator('thead th button').first());
+   assert.equal(await inspector.locator('thead th button').first().getAttribute('aria-label'),'Seleccionar columna extra');
+   await inspector.getByRole('button',{name:'Filas',exact:true}).click();
+   await inspector.getByRole('button',{name:'＋ Fila única',exact:true}).click();
+   const groups=await inspector.locator('.ee-table-sources fieldset').count();
+   await inspector.locator('.ee-table-source-fields').last().getByRole('button',{name:/extra/}).click();
+   await inspector.getByLabel(`Valor ${groups} extra`,{exact:true}).fill('STATIC-SKU');
+   await inspector.getByRole('button',{name:'Resultado',exact:true}).click();
+   await inspector.locator('tbody').getByText('STATIC-SKU',{exact:true}).waitFor();
+   await page.screenshot({path:path.join(output,'21-tabla-fuentes-columna.png')});
+   assert.deepEqual(errors,[]);console.log('Rewritten table column and mixed sources passed');await browser.close();server.kill();process.exit(0);
+ }
+
  await page.getByLabel('Correo a editar').selectOption('summary');await page.getByText('Todavía no hay artículos',{exact:true}).waitFor();
  await page.screenshot({path:path.join(output,'06-lista-vacia.png')});
  await page.getByLabel('Correo a editar').selectOption('newsletter');await page.getByRole('heading',{name:'Ideas para tu próxima escapada',exact:true}).waitFor();
@@ -164,6 +212,35 @@ try {
  assert.ok(await footer.evaluate((el,id)=>!!(document.querySelector(`[data-ee-block-id="${id}"]`).compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING),imageId));
 
 
+
+ if(process.argv.includes('--component-fit-only')) {
+   const header=page.locator('.ee-component-instance').filter({has:page.getByText('NORTE',{exact:true})});
+   await header.click();
+   await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).scrollIntoViewIfNeeded();
+   const grip=await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).boundingBox();
+   await page.keyboard.down('Alt');await page.mouse.move(grip.x+7,grip.y+7);await page.mouse.down();await page.mouse.move(grip.x+7,grip.y+107,{steps:10});await page.mouse.up();await page.keyboard.up('Alt');
+   const fit=await header.evaluate(el=>{const outer=el.getBoundingClientRect(),background=el.querySelector(':scope > div > div').getBoundingClientRect();return {height:outer.height,backgroundHeight:background.height,width:outer.width,backgroundWidth:background.width};});
+   assert.ok(Math.abs(fit.height-fit.backgroundHeight)<1,'Header background must fill the resized height');
+   assert.ok(Math.abs(fit.width-fit.backgroundWidth)<1,'Header background must fill the frame width');
+   await page.screenshot({path:path.join(output,'19-cabecera-tamano-contenido.png')});
+   await page.getByRole('button',{name:/Lado a lado/}).click();
+   const preview=page.frameLocator('iframe[title="Correo renderizado localmente"]');
+   const headerFrame=preview.locator('[data-ee-component="header"]');
+   await headerFrame.waitFor();
+   const exported=await headerFrame.evaluate(el=>Math.abs(el.getBoundingClientRect().height-el.firstElementChild.getBoundingClientRect().height));
+   assert.ok(exported<1,'Exported preview background must fill the resized height');
+
+   await page.getByRole('button',{name:/Lado a lado/}).click();
+   await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).scrollIntoViewIfNeeded();
+   const smallGrip=await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).boundingBox();
+   await page.keyboard.down('Alt');await page.mouse.move(smallGrip.x+7,smallGrip.y+7);await page.mouse.down();await page.mouse.move(smallGrip.x+7,smallGrip.y-250,{steps:10});await page.mouse.up();await page.keyboard.up('Alt');
+   const minimum=await header.evaluate(el=>{const outer=el.getBoundingClientRect(),background=el.querySelector(':scope > div > div').getBoundingClientRect(),text=el.querySelector('p').getBoundingClientRect();return {height:outer.height,backgroundBottom:background.bottom,textBottom:text.bottom,frameBottom:outer.bottom};});
+   assert.ok(minimum.height>48,'Header cannot be resized below its content');
+   assert.ok(minimum.textBottom<=minimum.backgroundBottom+1,'Subtitle must stay within background');
+   assert.ok(minimum.backgroundBottom<=minimum.frameBottom+1,'Background must stay within selection');
+   await page.screenshot({path:path.join(output,'20-cabecera-altura-minima.png')});
+   console.log('Component frame and content sizing passed');await browser.close();server.kill();process.exit(0);
+ }
  const metric=page.locator('.ee-component-instance').filter({has:page.getByText('40',{exact:true})});
  await metric.click();await page.getByRole('tab',{name:'Diseño',exact:true}).click();
  const beforeMetric=await metric.boundingBox();
@@ -174,7 +251,7 @@ try {
  assert.ok(Math.abs(afterMetric.width-beforeMetric.width)<1,'Bottom handle must not change component width');
  assert.ok(Math.abs(afterMetric.height-beforeMetric.height-80)<1,'Bottom handle must change height');
  await page.getByRole('button',{name:'Centro vertical',exact:true}).click();
- const centerGap=await metric.evaluate(el=>{const outer=el.getBoundingClientRect(),inner=el.querySelector(':scope > div').getBoundingClientRect();return Math.abs((outer.top+outer.bottom-inner.top-inner.bottom)/2);});
+ const centerGap=await metric.evaluate(el=>{const outer=el.getBoundingClientRect(),inner=el.querySelector(':scope > div > div').getBoundingClientRect();return Math.abs((outer.top+outer.bottom-inner.top-inner.bottom)/2);});
  assert.ok(centerGap<1,'Component content must be vertically centred');
 
  assert.equal(await metric.evaluate(el=>{const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(node.textContent.trim()==="'")return true;}return false;}),false,'Metric must not render a stray quote');
@@ -219,6 +296,16 @@ try {
    const middle=await condition.locator('p').evaluate(el=>{const a=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2);});
    assert.ok(middle<1,'Savings box must be centred inside its parent');
    await page.screenshot({path:path.join(output,'18-bloque-ahorro-centrado.png')});
+
+   const layerBeforePan=await page.locator('.ee-canvas-layer').getAttribute('style');
+   const selectedBeforePan=await condition.locator('p').getAttribute('style');
+   const panTarget=await condition.locator('p').boundingBox();
+   await page.keyboard.down('Space');
+   await page.mouse.move(panTarget.x+panTarget.width/2,panTarget.y+panTarget.height/2);
+   await page.mouse.down();await page.mouse.move(panTarget.x+panTarget.width/2+30,panTarget.y+panTarget.height/2+20,{steps:5});await page.mouse.up();
+   await page.keyboard.up('Space');
+   assert.notEqual(await page.locator('.ee-canvas-layer').getAttribute('style'),layerBeforePan);
+   assert.equal(await condition.locator('p').getAttribute('style'),selectedBeforePan);
    console.log('HTML container and conditional resizing passed');
    await browser.close();server.kill();process.exit(0);
  }
@@ -228,7 +315,7 @@ try {
  }
 
  await page.getByRole('button',{name:'Abajo',exact:true}).click();
- const bottomGap=await metric.evaluate(el=>el.getBoundingClientRect().bottom-el.querySelector(':scope > div').getBoundingClientRect().bottom);
+ const bottomGap=await metric.evaluate(el=>el.getBoundingClientRect().bottom-el.querySelector(':scope > div > div').getBoundingClientRect().bottom);
  assert.ok(bottomGap<1,'Component content must align to bottom');
 
  await page.locator(`img[data-ee-block-id="${imageId}"]`).click();
@@ -239,13 +326,14 @@ try {
  const relHandle=await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).boundingBox();
  const relativeStart=await page.locator('img.ee-block-selected').evaluate(img=>{const p=img.parentElement,css=getComputedStyle(p);return {available:p.clientWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight),width:img.getBoundingClientRect().width};});
  await page.mouse.move(relHandle.x+7,relHandle.y+7);await page.mouse.down();await page.mouse.move(relHandle.x+7+relativeStart.available/2-relativeStart.width-2,relHandle.y+7,{steps:8});
- await page.locator('.ee-transform-size-guide').waitFor();
+ await page.locator('.ee-transform-size-guide').first().waitFor();
  await page.screenshot({path:path.join(output,'15-guia-medida-relativa.png')});
  await page.mouse.up();
  assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.style.width),'50%');
  await page.locator('.ee-transform-measurements').filter({hasText:'50% · relativo'}).waitFor();
  const title=page.getByRole('heading',{name:'Nos vemos en el próximo encuentro',exact:true});
  await title.click();await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+ await page.getByLabel('Modo de altura',{exact:true}).selectOption('fixed');
  await page.getByRole('spinbutton',{name:'Altura',exact:true}).fill('180');
  await page.getByRole('button',{name:'Centro vertical',exact:true}).click();
  const textGap=await title.evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect(),box=el.getBoundingClientRect();return Math.abs((text.top+text.bottom-box.top-box.bottom)/2);});
@@ -259,7 +347,7 @@ try {
  await page.getByRole('button',{name:/375px/}).click();
  const issue=page.getByRole('button',{name:/Desbordamiento de prueba.*px \/ vista/});
  await issue.first().waitFor();
- await issue.first().click({force:true});
+ await issue.first().click();
  assert.ok(await page.locator('.ee-email-page .ee-block-selected').count());
  const previewFrame=page.frameLocator('iframe[title="Correo renderizado localmente"]');
  await previewFrame.getByText('Desbordamiento de prueba',{exact:true}).click();

@@ -62,3 +62,11 @@ it("centres a narrow rich-text box while preserving its text alignment",()=>{
   expect(output).toHaveTextContent('"textAlign":"center"');
   expect(output).toHaveTextContent('"width":"386px"');
 });
+
+it("updates the table width property together with its design styles",()=>{
+ const changes:Partial<EmailBlock>[]=[];
+ render(<BlockInspector block={{id:"t",type:"table",fields:["name"],collection:"items",width:"100%"}} tokens={[]} onPatch={(_,patch)=>changes.push(patch)} onInsertVariable={()=>{}}/>);
+ fireEvent.click(screen.getByRole("tab",{name:"Diseño"}));
+ fireEvent.change(screen.getByRole("combobox",{name:"Modo de ancho"}),{target:{value:"fixed"}});
+ expect(changes.at(-1)).toMatchObject({width:"300px",styles:{width:"300px"}});
+});
