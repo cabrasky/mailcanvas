@@ -576,3 +576,8 @@
 .ee-preview-selection { position:absolute; box-sizing:border-box; border:2px solid #7564ff; pointer-events:none; z-index:1; }
 .ee-preview-diagnostics { flex:none; max-height:110px; overflow:auto; }
 .ee-code-loading { display:grid; place-items:center; min-height:0; flex:1; background:#111827; color:#aab7c8; font-size:12px; }
+.ee-frame-sizing { display:grid; gap:12px; border:1px solid var(--panel-border,#48414f); border-radius:8px; padding:12px; margin:12px 0; min-width:0; }
+.ee-frame-sizing legend { padding:0 5px; font-size:12px; }
+.ee-frame-axis { display:grid; gap:8px; }
+.ee-frame-axis>label { display:grid; gap:6px; font-size:12px; }
+.ee-frame-sizing small { color:var(--text-faint); line-height:1.5; }

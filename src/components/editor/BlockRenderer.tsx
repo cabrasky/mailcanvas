@@ -1,3 +1,4 @@
+import { boxStyles } from "../../editor/blockLayout";
 import { tableSampleRows, resolveCellTemplate } from "../../services/tableRows";
 import { componentFrameStyles, componentHtml, expandComponents, type EmailComponent } from "../../services/emailComponents";
 import { buildSampleContext, renderThymeleaf } from "../../services/emailTemplateRenderer";
@@ -105,7 +106,7 @@ function inlineNodeDisplay(node: InlineNode, tokens: ReturnType<typeof useCanvas
 }
 
 function blockStyle(block: EmailBlock): React.CSSProperties {
-  return (block.styles ?? {}) as React.CSSProperties;
+  return (block.type === "container" || block.type === "if" ? boxStyles(block.styles) : block.styles || {}) as React.CSSProperties;
 }
 
 export default function BlockRenderer({ blocks, locals = {}, loopId }: Props) {

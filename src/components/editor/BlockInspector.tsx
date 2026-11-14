@@ -1,3 +1,4 @@
+import FrameSizing from "./FrameSizing";
 import SpacingInspector from "./SpacingInspector";
 import ImageInspector from "./ImageInspector";
 import ValueInput from "./ValueInput";
@@ -141,9 +142,10 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
             {block.type !== "image" && <LengthInput label="Tamaño del texto" value={block.styles?.fontSize ?? ""} onChange={fontSize => patch({ styles: { ...block.styles, fontSize } })} placeholder="16px" />}
 
             <LengthInput label="Radio de las esquinas" value={block.styles?.borderRadius ?? ""} onChange={borderRadius => patch({ styles: { ...block.styles, borderRadius } })} placeholder="8px" />
-            <LengthInput label="Altura" value={block.styles?.height ?? ""} onChange={height => patch({ styles: { ...block.styles, height, boxSizing: "border-box" } })} placeholder="auto" />
+
             <LengthInput label="Ancho máximo" value={block.styles?.maxWidth ?? ""} onChange={maxWidth => patch({ styles: { ...block.styles, maxWidth } })} placeholder="600px" />
           </div>
+          <FrameSizing key={`size-${block.id}`} styles={block.type === "image" && block.width ? {width:`${block.width}px`,...block.styles} : block.styles || {}} onChange={styles=>patch(block.type === "image" ? {styles,width:styles.width ? block.width : ""} : {styles})} />
           <SpacingInspector key={block.id} block={block} onChange={styles=>patch({styles})} />
           <div className="ee-field"><span>{isPositionAligned ? "Posición del bloque" : "Alineación del texto"}</span>
             <div className="ee-alignment-control" role="group" aria-label={isPositionAligned ? "Posición del bloque" : "Alineación del texto"}>

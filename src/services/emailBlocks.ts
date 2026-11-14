@@ -1,3 +1,4 @@
+import { boxStyles } from "../editor/blockLayout";
 import { normalizeTemplateMarkup } from "./templateMarkup";
 import type { EmailToken } from "./emailTemplateRenderer";
 import { tableRowGroups, columnExpression } from "./tableRows";
@@ -124,7 +125,7 @@ export function createEmailBlock(type: BlockKind, tokens: EmailToken[], id: stri
 
 function attributesFor(block: EmailBlock, extra: Record<string, string> = {}, editorMetadata = false) {
   const className = [block.className, extra.class].filter(Boolean).join(" ");
-  const styles = { ...(block.styles ?? {}) };
+  const styles = block.type === "container" || block.type === "if" ? boxStyles(block.styles) : { ...(block.styles ?? {}) };
   const styleText = Object.entries(styles)
     .filter(([property, value]) => /^(?:--[\w-]+|[a-zA-Z-]+)$/.test(property) && value && !/expression\s*\(|javascript:/i.test(value))
     .map(([property, value]) => `${property.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}:${value}`)

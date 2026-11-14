@@ -285,6 +285,7 @@ try {
  await page.locator('.ee-transform-measurements').filter({hasText:'50% · relativo'}).waitFor();
  const title=page.getByRole('heading',{name:'Nos vemos en el próximo encuentro',exact:true});
  await title.click();await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+ await page.getByLabel('Modo de altura',{exact:true}).selectOption('fixed');
  await page.getByRole('spinbutton',{name:'Altura',exact:true}).fill('180');
  await page.getByRole('button',{name:'Centro vertical',exact:true}).click();
  const textGap=await title.evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect(),box=el.getBoundingClientRect();return Math.abs((text.top+text.bottom-box.top-box.bottom)/2);});

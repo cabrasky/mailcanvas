@@ -1,3 +1,4 @@
+import { componentContent, componentLayout } from "./componentLayout";
 import { normalizeTemplateMarkup } from "./templateMarkup";
 import { templateExpression } from "./valueSyntax";
 export type ComponentProperty = {key:string;label:string;type:"text"|"url"|"color"|"boolean"|"number"|"email"|"image"|"date"|"datetime";defaultValue:string};
@@ -6,41 +7,8 @@ export type EmailComponent = {key:string;name:string;description:string;category
 export type ComponentInstance = {componentKey:string;name:string;values:Record<string,ComponentValue>;fallbackHtml:string;properties:ComponentProperty[];styles?:Record<string,string>};
 const escape=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const quote=(value:string)=>`'${value.replace(/\\/g,"\\\\").replace(/'/g,"\\'")}'`;
-/** Resize a single visual root while keeping its authored fallback recoverable. */
-function componentContent(source: string, styles: Record<string,string> = {}): string {
-  if (typeof DOMParser === "undefined") return source;
-  const doc = new DOMParser().parseFromString(normalizeTemplateMarkup(source), "text/html");
-  const root = doc.body.firstElementChild as HTMLElement | null;
-  if (!root || doc.body.children.length !== 1 || !["DIV","SECTION","HEADER","FOOTER","ARTICLE","ASIDE","FIGURE"].includes(root.tagName)) return source;
-  const original = root.getAttribute("data-ee-fit-original-style");
-  if (original !== null) { root.setAttribute("style", original); root.removeAttribute("data-ee-fit-original-style"); }
-  const height = styles.height && styles.height !== "auto";
-  const width = styles.width && styles.width !== "auto";
-  if (height || width) {
-    root.setAttribute("data-ee-fit-original-style",root.getAttribute("style") || "");
-    root.style.boxSizing = "border-box";
-    if (width) { root.style.width = "100%"; root.style.maxWidth = "100%"; }
-    if (height) {
-      root.style.height = "100%";
-      root.style.minHeight = "min-content";
-      root.style.flexShrink = "0";
-      if (styles.justifyContent && (!root.style.display || root.style.display === "block")) {
-        root.style.display = "flex";
-        root.style.flexDirection = "column";
-        root.style.justifyContent = styles.justifyContent;
-      }
-    }
-  }
-  return doc.body.innerHTML;
-}
-
 export function componentFrameStyles(instance: ComponentInstance, definition?: EmailComponent): Record<string,string> {
-  const styles = instance.styles || {};
-  if (!styles.height || styles.height === "auto" || typeof DOMParser === "undefined") return styles;
-  const doc = new DOMParser().parseFromString(normalizeTemplateMarkup(definition?.html || instance.fallbackHtml), "text/html");
-  const root = doc.body.firstElementChild;
-  if (doc.body.children.length !== 1 || !root || !["DIV","SECTION","HEADER","FOOTER","ARTICLE","ASIDE","FIGURE"].includes(root.tagName)) return styles;
-  return {...styles,display:"grid",gridTemplateColumns:"minmax(0, 1fr)",gridTemplateRows:"minmax(min-content, 1fr)",minHeight:styles.minHeight || "min-content"};
+  return componentLayout(definition?.html ?? instance.fallbackHtml,instance.styles);
 }
 
 export function componentHtml(instance:ComponentInstance,definition?:EmailComponent, presentationAttributes = ""):string {
