@@ -3,9 +3,46 @@ import { templateExpression } from "./valueSyntax";
 export type ComponentProperty = {key:string;label:string;type:"text"|"url"|"color"|"boolean"|"number"|"email"|"image"|"date"|"datetime";defaultValue:string};
 export type ComponentValue = {mode:"literal"|"expression";value:string};
 export type EmailComponent = {key:string;name:string;description:string;category:string;html:string;properties:ComponentProperty[]};
-export type ComponentInstance = {componentKey:string;name:string;values:Record<string,ComponentValue>;fallbackHtml:string;properties:ComponentProperty[]};
+export type ComponentInstance = {componentKey:string;name:string;values:Record<string,ComponentValue>;fallbackHtml:string;properties:ComponentProperty[];styles?:Record<string,string>};
 const escape=(value:string)=>value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
 const quote=(value:string)=>`'${value.replace(/\\/g,"\\\\").replace(/'/g,"\\'")}'`;
+/** Resize a single visual root while keeping its authored fallback recoverable. */
+function componentContent(source: string, styles: Record<string,string> = {}): string {
+  if (typeof DOMParser === "undefined") return source;
+  const doc = new DOMParser().parseFromString(normalizeTemplateMarkup(source), "text/html");
+  const root = doc.body.firstElementChild as HTMLElement | null;
+  if (!root || doc.body.children.length !== 1 || !["DIV","SECTION","HEADER","FOOTER","ARTICLE","ASIDE","FIGURE"].includes(root.tagName)) return source;
+  const original = root.getAttribute("data-ee-fit-original-style");
+  if (original !== null) { root.setAttribute("style", original); root.removeAttribute("data-ee-fit-original-style"); }
+  const height = styles.height && styles.height !== "auto";
+  const width = styles.width && styles.width !== "auto";
+  if (height || width) {
+    root.setAttribute("data-ee-fit-original-style",root.getAttribute("style") || "");
+    root.style.boxSizing = "border-box";
+    if (width) { root.style.width = "100%"; root.style.maxWidth = "100%"; }
+    if (height) {
+      root.style.height = "100%";
+      root.style.minHeight = "min-content";
+      root.style.flexShrink = "0";
+      if (styles.justifyContent && (!root.style.display || root.style.display === "block")) {
+        root.style.display = "flex";
+        root.style.flexDirection = "column";
+        root.style.justifyContent = styles.justifyContent;
+      }
+    }
+  }
+  return doc.body.innerHTML;
+}
+
+export function componentFrameStyles(instance: ComponentInstance, definition?: EmailComponent): Record<string,string> {
+  const styles = instance.styles || {};
+  if (!styles.height || styles.height === "auto" || typeof DOMParser === "undefined") return styles;
+  const doc = new DOMParser().parseFromString(normalizeTemplateMarkup(definition?.html || instance.fallbackHtml), "text/html");
+  const root = doc.body.firstElementChild;
+  if (doc.body.children.length !== 1 || !root || !["DIV","SECTION","HEADER","FOOTER","ARTICLE","ASIDE","FIGURE"].includes(root.tagName)) return styles;
+  return {...styles,display:"grid",gridTemplateColumns:"minmax(0, 1fr)",gridTemplateRows:"minmax(min-content, 1fr)",minHeight:styles.minHeight || "min-content"};
+}
+
 export function componentHtml(instance:ComponentInstance,definition?:EmailComponent, presentationAttributes = ""):string {
   const properties=definition?.properties??instance.properties;
   const assignments=properties.filter(prop=>/^[\w$]+$/.test(prop.key)).map(prop=>{
@@ -14,7 +51,7 @@ export function componentHtml(instance:ComponentInstance,definition?:EmailCompon
     const literal=prop.type==="boolean"?String(value.value==="true"):prop.type==="number"?(numeric?String(Number(value.value)):"null"):quote(value.value);
     return `${prop.key}=${value.mode==="expression"?(value.value.includes("${")?templateExpression(value.value):value.value):literal}`;
   }).join(", ");
-  return `<div${presentationAttributes} data-ee-component="${escape(instance.componentKey)}" data-ee-component-name="${escape(definition?.name??instance.name)}" data-ee-component-values="${escape(JSON.stringify(instance.values))}" data-ee-component-properties="${escape(JSON.stringify(properties))}"${assignments?` th:with="${escape(assignments)}"`:""}>${definition?.html??instance.fallbackHtml}</div>`;
+  return `<div${presentationAttributes} data-ee-component="${escape(instance.componentKey)}" data-ee-component-name="${escape(definition?.name??instance.name)}" data-ee-component-values="${escape(JSON.stringify(instance.values))}" data-ee-component-properties="${escape(JSON.stringify(properties))}"${assignments?` th:with="${escape(assignments)}"`:""}>${componentContent(definition?.html??instance.fallbackHtml,instance.styles)}</div>`;
 }
 export function readComponent(element:Element):ComponentInstance|undefined {
   const key=element.getAttribute("data-ee-component");
@@ -25,7 +62,7 @@ export function readComponent(element:Element):ComponentInstance|undefined {
     if(!values||typeof values!=="object"||Array.isArray(values)||!Array.isArray(properties))return undefined;
     if(Object.values(values).some((value:any)=>!value||!["literal","expression"].includes(value.mode)||typeof value.value!=="string"))return undefined;
     if(properties.some(prop=>!prop||typeof prop.key!=="string"||typeof prop.defaultValue!=="string"))return undefined;
-    return {componentKey:key,name:element.getAttribute("data-ee-component-name")??key,values,properties,fallbackHtml:element.innerHTML};
+    return {componentKey:key,name:element.getAttribute("data-ee-component-name")??key,values,properties,fallbackHtml:componentContent(element.innerHTML)};
   }catch{return undefined;}
 }
 export function expandComponents(source:string,definitions:EmailComponent[],depth=0):string {
@@ -36,6 +73,7 @@ export function expandComponents(source:string,definitions:EmailComponent[],dept
     if(element.parentElement?.closest("[data-ee-component]"))continue;
     const instance=readComponent(element);
     if(!instance)continue;
+    instance.styles=Object.fromEntries(Array.from((element as HTMLElement).style).map(name=>[name.replace(/-([a-z])/g,(_,letter:string)=>letter.toUpperCase()),(element as HTMLElement).style.getPropertyValue(name)]));
     const definition=definitions.find(item=>item.key===instance.componentKey);
     const rendered=new DOMParser().parseFromString(componentHtml(instance,definition),"text/html").body.firstElementChild!;
     // Presentation belongs to this instance, not to the shared definition.

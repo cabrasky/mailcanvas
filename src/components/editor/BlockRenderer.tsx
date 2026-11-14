@@ -1,5 +1,5 @@
 import { tableSampleRows, resolveCellTemplate } from "../../services/tableRows";
-import { componentHtml, expandComponents, type EmailComponent } from "../../services/emailComponents";
+import { componentFrameStyles, componentHtml, expandComponents, type EmailComponent } from "../../services/emailComponents";
 import { buildSampleContext, renderThymeleaf } from "../../services/emailTemplateRenderer";
 import React, { useEffect, useRef } from "react";
 import { emailBlocksToHtml, safeUrl, type EmailBlock, type InlineNode } from "../../services/emailBlocks";
@@ -150,8 +150,9 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
 }) {
   if (block.type === "component") {
     const definition=ctx.components?.find(item=>item.key===block.componentKey);
-    const html = renderPreviewHtml(componentHtml(block, definition), ctx.tokens, locals, ctx.components);
-    return <div {...props} style={{ ...blockStyle(block), ...props.style }} className={`${props.className} ee-component-instance`} title={`Instancia de ${definition?.name??block.name}`}><span className="ee-component-tag">◇ {definition?.name??block.name}</span><div dangerouslySetInnerHTML={{__html:html}}/></div>;
+    const rendered = renderPreviewHtml(emailBlocksToHtml([block], {components:ctx.components}), ctx.tokens, locals, ctx.components);
+    const html = new DOMParser().parseFromString(rendered,"text/html").body.firstElementChild?.innerHTML || "";
+    return <div {...props} style={{ ...componentFrameStyles(block,definition), ...props.style }} className={`${props.className} ee-component-instance`} title={`Instancia de ${definition?.name??block.name}`}><span className="ee-component-tag">◇ {definition?.name??block.name}</span><div style={{display:"contents"}} dangerouslySetInnerHTML={{__html:html}}/></div>;
   }
 
   if (block.type === "html") {

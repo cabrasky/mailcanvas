@@ -164,6 +164,35 @@ try {
  assert.ok(await footer.evaluate((el,id)=>!!(document.querySelector(`[data-ee-block-id="${id}"]`).compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING),imageId));
 
 
+
+ if(process.argv.includes('--component-fit-only')) {
+   const header=page.locator('.ee-component-instance').filter({has:page.getByText('NORTE',{exact:true})});
+   await header.click();
+   await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).scrollIntoViewIfNeeded();
+   const grip=await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).boundingBox();
+   await page.keyboard.down('Alt');await page.mouse.move(grip.x+7,grip.y+7);await page.mouse.down();await page.mouse.move(grip.x+7,grip.y+107,{steps:10});await page.mouse.up();await page.keyboard.up('Alt');
+   const fit=await header.evaluate(el=>{const outer=el.getBoundingClientRect(),background=el.querySelector(':scope > div > div').getBoundingClientRect();return {height:outer.height,backgroundHeight:background.height,width:outer.width,backgroundWidth:background.width};});
+   assert.ok(Math.abs(fit.height-fit.backgroundHeight)<1,'Header background must fill the resized height');
+   assert.ok(Math.abs(fit.width-fit.backgroundWidth)<1,'Header background must fill the frame width');
+   await page.screenshot({path:path.join(output,'19-cabecera-tamano-contenido.png')});
+   await page.getByRole('button',{name:/Lado a lado/}).click();
+   const preview=page.frameLocator('iframe[title="Correo renderizado localmente"]');
+   const headerFrame=preview.locator('[data-ee-component="header"]');
+   await headerFrame.waitFor();
+   const exported=await headerFrame.evaluate(el=>Math.abs(el.getBoundingClientRect().height-el.firstElementChild.getBoundingClientRect().height));
+   assert.ok(exported<1,'Exported preview background must fill the resized height');
+
+   await page.getByRole('button',{name:/Lado a lado/}).click();
+   await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).scrollIntoViewIfNeeded();
+   const smallGrip=await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).boundingBox();
+   await page.keyboard.down('Alt');await page.mouse.move(smallGrip.x+7,smallGrip.y+7);await page.mouse.down();await page.mouse.move(smallGrip.x+7,smallGrip.y-250,{steps:10});await page.mouse.up();await page.keyboard.up('Alt');
+   const minimum=await header.evaluate(el=>{const outer=el.getBoundingClientRect(),background=el.querySelector(':scope > div > div').getBoundingClientRect(),text=el.querySelector('p').getBoundingClientRect();return {height:outer.height,backgroundBottom:background.bottom,textBottom:text.bottom,frameBottom:outer.bottom};});
+   assert.ok(minimum.height>48,'Header cannot be resized below its content');
+   assert.ok(minimum.textBottom<=minimum.backgroundBottom+1,'Subtitle must stay within background');
+   assert.ok(minimum.backgroundBottom<=minimum.frameBottom+1,'Background must stay within selection');
+   await page.screenshot({path:path.join(output,'20-cabecera-altura-minima.png')});
+   console.log('Component frame and content sizing passed');await browser.close();server.kill();process.exit(0);
+ }
  const metric=page.locator('.ee-component-instance').filter({has:page.getByText('40',{exact:true})});
  await metric.click();await page.getByRole('tab',{name:'Diseño',exact:true}).click();
  const beforeMetric=await metric.boundingBox();
@@ -174,7 +203,7 @@ try {
  assert.ok(Math.abs(afterMetric.width-beforeMetric.width)<1,'Bottom handle must not change component width');
  assert.ok(Math.abs(afterMetric.height-beforeMetric.height-80)<1,'Bottom handle must change height');
  await page.getByRole('button',{name:'Centro vertical',exact:true}).click();
- const centerGap=await metric.evaluate(el=>{const outer=el.getBoundingClientRect(),inner=el.querySelector(':scope > div').getBoundingClientRect();return Math.abs((outer.top+outer.bottom-inner.top-inner.bottom)/2);});
+ const centerGap=await metric.evaluate(el=>{const outer=el.getBoundingClientRect(),inner=el.querySelector(':scope > div > div').getBoundingClientRect();return Math.abs((outer.top+outer.bottom-inner.top-inner.bottom)/2);});
  assert.ok(centerGap<1,'Component content must be vertically centred');
 
  assert.equal(await metric.evaluate(el=>{const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(node.textContent.trim()==="'")return true;}return false;}),false,'Metric must not render a stray quote');
@@ -238,7 +267,7 @@ try {
  }
 
  await page.getByRole('button',{name:'Abajo',exact:true}).click();
- const bottomGap=await metric.evaluate(el=>el.getBoundingClientRect().bottom-el.querySelector(':scope > div').getBoundingClientRect().bottom);
+ const bottomGap=await metric.evaluate(el=>el.getBoundingClientRect().bottom-el.querySelector(':scope > div > div').getBoundingClientRect().bottom);
  assert.ok(bottomGap<1,'Component content must align to bottom');
 
  await page.locator(`img[data-ee-block-id="${imageId}"]`).click();

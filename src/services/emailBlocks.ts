@@ -1,7 +1,7 @@
 import { normalizeTemplateMarkup } from "./templateMarkup";
 import type { EmailToken } from "./emailTemplateRenderer";
 import { tableRowGroups, columnExpression } from "./tableRows";
-import { componentHtml, readComponent, type ComponentInstance, type EmailComponent } from "./emailComponents";
+import { componentFrameStyles, componentHtml, readComponent, type ComponentInstance, type EmailComponent } from "./emailComponents";
 import { templateExpression } from "./valueSyntax";
 
 export type TableCell = { mode: "text" | "expression" | "template"; value: string };
@@ -176,7 +176,7 @@ export function emailBlocksToHtml(blocks: EmailBlock[], options: { editorMetadat
   collectClassRules(blocks);
   const markup = blocks.map(block => {
     switch (block.type) {
-      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey), attributesFor({...block,attributes:Object.fromEntries(Object.entries(block.attributes || {}).filter(([name])=>!name.startsWith("data-ee-component") && name!=="th:with"))}, {}, !!options.editorMetadata));
+      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey), attributesFor({...block,styles:componentFrameStyles(block,options.components?.find(component=>component.key===block.componentKey)),attributes:Object.fromEntries(Object.entries(block.attributes || {}).filter(([name])=>!name.startsWith("data-ee-component") && name!=="th:with"))}, {}, !!options.editorMetadata));
       case "html": return block.html;
       case "heading": {
         const level = block.level ?? 2;
