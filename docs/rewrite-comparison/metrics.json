@@ -1,0 +1,59 @@
+{
+  "baseline_commit": "77f2ce5",
+  "branch": "codex/editor-rewrite",
+  "public_exports_unchanged": true,
+  "tests": {
+    "before": 81,
+    "after": 92
+  },
+  "artifacts": {
+    "index.js": {
+      "before_bytes": 217716,
+      "after_bytes": 217424,
+      "delta_bytes": -292,
+      "before_gzip_bytes": 54137,
+      "after_gzip_bytes": 55042
+    },
+    "style.css": {
+      "before_bytes": 435335,
+      "after_bytes": 435719,
+      "delta_bytes": 384,
+      "before_gzip_bytes": 152442,
+      "after_gzip_bytes": 152522
+    }
+  },
+  "visual": {
+    "vertical": {
+      "resolution": [
+        1680,
+        1100
+      ],
+      "changed_pixels_threshold_20_percent": 0.003,
+      "note": "Includes layout and text changes; not a quality score."
+    },
+    "centering": {
+      "resolution": [
+        1680,
+        1100
+      ],
+      "changed_pixels_threshold_20_percent": 0.006,
+      "note": "Includes layout and text changes; not a quality score."
+    },
+    "preview": {
+      "resolution": [
+        1680,
+        1100
+      ],
+      "changed_pixels_threshold_20_percent": 3.298,
+      "note": "Includes layout and text changes; not a quality score."
+    }
+  },
+  "validation": [
+    "npm test",
+    "npm run build",
+    "npm run test:consumer-types",
+    "node scripts/smoke-component.mjs",
+    "node scripts/review-demo.mjs",
+    "node scripts/review-demo.mjs --html-sizing-only"
+  ]
+}

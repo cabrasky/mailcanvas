@@ -19,6 +19,8 @@ Abre la dirección indicada por Vite. El servidor de desarrollo escucha en todas
 
 | Documento | Contenido |
 | --- | --- |
+| [Inventario técnico](docs/TECHNICAL-FEATURES.md) | Funciones y contratos de 1.0.3 antes de la reescritura |
+| [Comparación de la reescritura](docs/REWRITE-COMPARISON.md) | Arquitectura, pruebas, tamaños y diferencias visuales |
 | [Integración React](docs/REACT-COMPONENT.md) | Paquete instalable, props, estilos, React 18/19 y ejemplo de consumo |
 | [Guía de uso](docs/GUIA-DE-USO.md) | Interfaz, variables, T / ƒ, capas, tablas y componentes |
 | [Arquitectura e integración](docs/ARQUITECTURA.md) | API, modelos, serialización y organización del código |
@@ -80,7 +82,7 @@ El componente se integra en su contenedor por defecto. Usa `defaultMaximized` pa
 
 ## Alcance
 
-Los cambios entre correos se conservan durante la sesión. Recargar recupera los ejemplos iniciales. Guardar, enviar pruebas y renderizar en servidor son callbacks simulados; no hay persistencia ni conexión a Yambo.
+La demo guarda borradores y biblioteca en localStorage al confirmar Guardar. Recargar recupera la última versión guardada. Las pruebas de envío y de servidor se simulan en la demo. La aplicación consumidora aporta sus callbacks y almacenamiento.
 
 El renderizador local implementa un subconjunto de Thymeleaf. La preview no certifica compatibilidad con Outlook, Gmail u otros clientes. La integración real debe resolver las referencias compartidas y validar el HTML con el motor del servidor.
 

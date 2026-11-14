@@ -219,6 +219,16 @@ try {
    const middle=await condition.locator('p').evaluate(el=>{const a=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2);});
    assert.ok(middle<1,'Savings box must be centred inside its parent');
    await page.screenshot({path:path.join(output,'18-bloque-ahorro-centrado.png')});
+
+   const layerBeforePan=await page.locator('.ee-canvas-layer').getAttribute('style');
+   const selectedBeforePan=await condition.locator('p').getAttribute('style');
+   const panTarget=await condition.locator('p').boundingBox();
+   await page.keyboard.down('Space');
+   await page.mouse.move(panTarget.x+panTarget.width/2,panTarget.y+panTarget.height/2);
+   await page.mouse.down();await page.mouse.move(panTarget.x+panTarget.width/2+30,panTarget.y+panTarget.height/2+20,{steps:5});await page.mouse.up();
+   await page.keyboard.up('Space');
+   assert.notEqual(await page.locator('.ee-canvas-layer').getAttribute('style'),layerBeforePan);
+   assert.equal(await condition.locator('p').getAttribute('style'),selectedBeforePan);
    console.log('HTML container and conditional resizing passed');
    await browser.close();server.kill();process.exit(0);
  }
@@ -239,7 +249,7 @@ try {
  const relHandle=await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).boundingBox();
  const relativeStart=await page.locator('img.ee-block-selected').evaluate(img=>{const p=img.parentElement,css=getComputedStyle(p);return {available:p.clientWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight),width:img.getBoundingClientRect().width};});
  await page.mouse.move(relHandle.x+7,relHandle.y+7);await page.mouse.down();await page.mouse.move(relHandle.x+7+relativeStart.available/2-relativeStart.width-2,relHandle.y+7,{steps:8});
- await page.locator('.ee-transform-size-guide').waitFor();
+ await page.locator('.ee-transform-size-guide').first().waitFor();
  await page.screenshot({path:path.join(output,'15-guia-medida-relativa.png')});
  await page.mouse.up();
  assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.style.width),'50%');
@@ -259,7 +269,7 @@ try {
  await page.getByRole('button',{name:/375px/}).click();
  const issue=page.getByRole('button',{name:/Desbordamiento de prueba.*px \/ vista/});
  await issue.first().waitFor();
- await issue.first().click({force:true});
+ await issue.first().click();
  assert.ok(await page.locator('.ee-email-page .ee-block-selected').count());
  const previewFrame=page.frameLocator('iframe[title="Correo renderizado localmente"]');
  await previewFrame.getByText('Desbordamiento de prueba',{exact:true}).click();

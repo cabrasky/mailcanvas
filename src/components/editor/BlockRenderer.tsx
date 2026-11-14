@@ -2,7 +2,7 @@ import { tableSampleRows, resolveCellTemplate } from "../../services/tableRows";
 import { componentHtml, expandComponents, type EmailComponent } from "../../services/emailComponents";
 import { buildSampleContext, renderThymeleaf } from "../../services/emailTemplateRenderer";
 import React, { useEffect, useRef } from "react";
-import { safeUrl, type EmailBlock, type InlineNode } from "../../services/emailBlocks";
+import { emailBlocksToHtml, safeUrl, type EmailBlock, type InlineNode } from "../../services/emailBlocks";
 import { markerFor } from "../../services/inlineTextModel";
 import { resolveSample, formatSample } from "../../services/blockPreview";
 import { sanitizeHtmlForDisplay, isInlineHtmlRoot } from "../../services/htmlSanitize";
@@ -242,72 +242,10 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
 /** Non-interactive visual echo of a block subtree — used for loop iterations after the first, so repeated
  * content looks right without duplicating a selectable/editable block id into the DOM. */
 function StaticBlockRenderer({ blocks, locals, tokens }: { blocks: EmailBlock[]; locals: Record<string, unknown>; tokens: EmailToken[] }) {
-  return <>{blocks.map(block => <StaticBlock key={block.id} block={block} locals={locals} tokens={tokens} />)}</>;
-}
-
-function StaticBlock({ block, locals, tokens }: { block: EmailBlock; locals: Record<string, unknown>; tokens: EmailToken[] }) {
-  const ctx=useCanvasContext();
-  const style = blockStyle(block);
-  if(block.type === "component") return <div style={style} dangerouslySetInnerHTML={{__html:renderPreviewHtml(componentHtml(block), tokens, locals, ctx.components)}}/>;
-  if (block.type === "html") {
-    const safeHtml = renderPreviewHtml(block.html, ctx.tokens, locals, ctx.components);
-    return <div style={{ ...style, display: isInlineHtmlRoot(block.html) ? "inline" : undefined }} dangerouslySetInnerHTML={{ __html: safeHtml }} />;
-  }
-  if (block.type === "heading") {
-    const Tag = `h${block.level ?? 2}` as "h1" | "h2" | "h3";
-    return <div style={style}><Tag>{block.text}</Tag></div>;
-  }
-  if (block.type === "paragraph") return <div style={style}><p>{block.text}</p></div>;
-  if (block.type === "rich") {
-    const html = block.children.map((node, index) => inlineNodeDisplay(node, tokens, locals, index)).join("");
-    const Tag = block.tag;
-    return <Tag style={style} dangerouslySetInnerHTML={{ __html: html }} />;
-  }
-  if (block.type === "variable") {
-    const value = resolveSample(block.expression, tokens, locals);
-    return <div style={style}><span className="ee-render-variable">ƒ {value === undefined ? block.expression : formatSample(value)}</span></div>;
-  }
-  if (block.type === "button") {
-    const text = block.textExpression ? formatSample(resolveSample(block.textExpression, tokens, locals)) || block.text : block.text;
-    return <div style={{ ...style, padding: "4px 0" }}><span className="ee-render-button">{text}</span></div>;
-  }
-  if (block.type === "image") {
-    const src = block.srcMode !== "text" ? resolveCellTemplate(block.src, tokens, locals) : block.src;
-    const looksReal = /^(https?:\/\/|blob:|\/(?!\/))/i.test(src);
-    return <div>{looksReal
-      ? <img src={src} alt={block.alt} style={{ maxWidth: "100%", height: "auto", ...style, width: block.styles?.width || (block.width ? `${block.width}px` : undefined) }} draggable={false} />
-      : <div className="ee-render-image-missing"><span>▧</span>{block.alt || "Imagen"}</div>}</div>;
-  }
-  if (block.type === "divider") return <div style={style}><hr style={{ border: 0, borderTop: `1px solid ${block.color}`, margin: "12px 0" }} /></div>;
-  if (block.type === "spacer") {
-    const height = Math.max(4, Math.min(Number(block.height) || 0, 400));
-    return <div style={{ ...style, height }} className="ee-render-spacer">{height}px</div>;
-  }
-  if (block.type === "table") {
-    const rows = tableSampleRows(block, tokens, locals);
-    return <div style={{ ...style, width: block.width ?? "100%" }}>
-      <table className="ee-render-table" style={{ borderCollapse: "collapse" }}>
-        {block.header && <thead><tr>{block.fields.map(field => <th key={field} align={block.columnAlignments?.[field] ?? "left"} style={{ padding: block.cellPadding ?? "8px", border: `${block.borderWidth ?? "1px"} solid ${block.borderColor ?? "#e2e8f0"}`, background: block.headerBackground ?? "#f1f5f9", color: block.headerColor ?? "#334155", width: block.columnWidths?.[field] }}>{block.columnLabels?.[field] || field.split(".").pop()}</th>)}</tr></thead>}
-        <tbody>{rows.map((item, rowIndex) => <tr key={rowIndex}>{block.fields.map(field => {
-          const value = item.values[field];
-          return <td key={field} align={block.columnAlignments?.[field] ?? "left"} style={{ padding: block.cellPadding ?? "8px", border: `${block.borderWidth ?? "1px"} solid ${block.borderColor ?? "#e2e8f0"}`, width: block.columnWidths?.[field] }}>{value === undefined ? field : formatSample(value)}</td>;
-        })}</tr>)}</tbody>
-      </table>
-    </div>;
-  }
-  if (block.type === "container") return <div style={style}><StaticBlockRenderer blocks={block.children} locals={locals} tokens={tokens} /></div>;
-  if (block.type === "loop") {
-    const isTableLoop = block.children.length === 1 && block.children[0].type === "table";
-    const items = isTableLoop ? [undefined] : resolveCollection(block.collection, tokens, locals);
-    return <div>{items.map((item, index) => <div key={index} style={style}><StaticBlockRenderer blocks={block.children} locals={{ ...locals, item }} tokens={tokens} /></div>)}</div>;
-  }
-  if (block.type === "if") {
-    const value = resolveSample(block.variable, tokens, locals);
-    const visible = block.operator === "hasValue" ? value !== undefined && value !== null && value !== ""
-      : block.operator === "equals" ? String(value) === block.expected : String(value) !== block.expected;
-    return visible ? <div style={style}><StaticBlockRenderer blocks={block.children} locals={locals} tokens={tokens} /></div> : null;
-  }
-  return null;
+  const { components } = useCanvasContext();
+  const source = emailBlocksToHtml(blocks, { components });
+  const html = renderPreviewHtml(source, tokens, locals, components);
+  return <div className="ee-static-blocks" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function VariableBlockNode({ block, locals, props, ctx }: {

@@ -572,3 +572,7 @@
 .ee-workspace-tip .ee-transform-measurements { position:static; display:flex; flex-direction:column; width:auto; max-width:100%; padding:0; background:transparent; color:var(--text,#ddd); box-shadow:none; font-size:10px; line-height:14px; gap:0; }
 .ee-workspace-tip .ee-transform-measurements span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ee-workspace-topbar:has(.ee-transform-measurements) { height:auto; min-height:42px; }
+.ee-preview-frame { position:relative; display:flex; flex:1; min-height:0; overflow:hidden; }
+.ee-preview-selection { position:absolute; box-sizing:border-box; border:2px solid #7564ff; pointer-events:none; z-index:1; }
+.ee-preview-diagnostics { flex:none; max-height:110px; overflow:auto; }
+.ee-code-loading { display:grid; place-items:center; min-height:0; flex:1; background:#111827; color:#aab7c8; font-size:12px; }

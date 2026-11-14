@@ -17,7 +17,7 @@ flowchart LR
   Render --> Preview[iframe de vista previa]
 ```
 
-`EmailEditor` es controlado por `value` y `onChange`. El hook conserva árbol e historial. Publicar una operación serializa el árbol y comunica la fuente al padre. Una referencia interna distingue la propia fuente emitida de una importación externa.
+`EmailEditor` es controlado por `value` y `onChange`. EditorDocument conserva instantáneas de HTML y bloques, historial y la fuente guardada. Cada transacción publica su estado antes de notificar al host. Una cola de fuentes emitidas reconoce acknowledgements tardíos y los distingue de importaciones externas. useEditorDocument conecta este almacén con React mediante useSyncExternalStore.
 
 El lienzo usa elementos React del documento principal. La preview utiliza un `iframe` con `sandbox=""`. El zoom transforma visualmente el lienzo; no cambia el ancho de composición del correo.
 
@@ -127,7 +127,11 @@ Preservar HTML protegido no equivale a importarlo estructuralmente. Revisa tabla
 | `demo/ComponentLibraryManager.tsx` | Diálogo de originales |
 | `src/components/EmailEditor.tsx` | Composición, paneles y acciones |
 | `src/components/email-editor/useEmailEditor.ts` | Estado, selección y publicación |
-| `src/components/email-editor/documentReducer.ts` | Publicar, deshacer y rehacer |
+| `src/editor/EditorDocument.ts` | Transacciones, historial completo y sincronización del documento |
+| `src/editor/usePointerSession.ts` | Finalización y cancelación de gestos |
+| `src/editor/useCanvasViewport.ts` | Cámara, foco, pan, zoom y destinos de arrastre |
+| `src/editor/canvasGeometry.ts` | Medidas y unidades fijadas al comenzar un gesto |
+| `demo/useDemoSession.ts` | Datos, documentos, biblioteca y persistencia de la demo |
 | `src/components/editor/Workspace.tsx` | Lienzo, pan, zoom y arrastre |
 | `src/components/editor/BlockRenderer.tsx` | Bloques editables y repeticiones |
 | `src/components/editor/LayerPanel.tsx` | Árbol, búsqueda y arrastre de filas |
