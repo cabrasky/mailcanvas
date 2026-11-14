@@ -598,3 +598,14 @@
 .ee-box-edge.edge-right { right:2px; top:50%; transform:translateY(-50%); }
 .ee-box-content { position:absolute; inset:29px 35px; display:grid; place-items:center; background:var(--panel,#242228); border:1px solid #7564ff; font-size:10px; }
 .ee-box-legend { display:flex; justify-content:space-between; font-size:10px; color:var(--text-faint); margin:7px 0 12px; }
+.ee-table-inspector { padding:12px; display:grid; gap:12px; }
+.ee-table-sample { max-width:100%; overflow:auto; border:1px solid var(--panel-border,#48414f); border-radius:7px; }
+.ee-table-sample table { width:100%; border-collapse:collapse; font-size:11px; }
+.ee-table-sample th,.ee-table-sample td { padding:0; border:1px solid var(--panel-border,#48414f); }
+.ee-table-sample button { width:100%; min-width:65px; padding:8px; text-align:left; background:transparent; color:var(--text,#ddd); }
+.ee-table-sample th button[aria-pressed="true"] { background:#493c68; color:white; }
+.ee-table-sample .ee-table-drop-column { box-shadow:inset 3px 0 #a892ff; }
+.ee-table-column-properties,.ee-table-sources fieldset { display:grid; min-width:0; gap:10px; border:1px solid var(--panel-border,#48414f); border-radius:8px; padding:12px; }
+.ee-table-column-properties legend,.ee-table-sources legend { font-size:12px; padding:0 5px; }
+.ee-table-sources,.ee-table-source-fields { display:grid; gap:10px; }
+.ee-table-source-fields .ee-btn { text-align:left; overflow:hidden; text-overflow:ellipsis; }

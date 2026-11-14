@@ -17,6 +17,24 @@ try {
  const page=await browser.newPage({viewport:{width:1680,height:1100},locale:'es-ES'}); const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto(`http://127.0.0.1:${port}/`);await page.locator('.ee-email-page').waitFor();
  assert.equal(await page.getByLabel('Correo a editar').locator('option').count(),6);
+ if(process.argv.includes('--table-only')) {
+   const table=page.locator('.ee-email-page [data-ee-block-kind="table"]').first();
+   await table.locator('th').first().click();
+   const inspector=page.getByRole('region',{name:'Configurar tabla'});
+   await inspector.getByLabel('Nombre del nuevo campo').fill('extra');
+   await inspector.getByRole('button',{name:'＋ Columna',exact:true}).click();
+   await inspector.getByRole('button',{name:'Seleccionar columna extra',exact:true}).waitFor();
+   await inspector.getByRole('button',{name:'Filas',exact:true}).click();
+   await inspector.getByRole('button',{name:'＋ Fila única',exact:true}).click();
+   const groups=await inspector.locator('.ee-table-sources fieldset').count();
+   await inspector.locator('.ee-table-source-fields').last().getByRole('button',{name:/extra/}).click();
+   await inspector.getByLabel(`Valor ${groups} extra`,{exact:true}).fill('STATIC-SKU');
+   await inspector.getByRole('button',{name:'Resultado',exact:true}).click();
+   await inspector.locator('tbody').getByText('STATIC-SKU',{exact:true}).waitFor();
+   await page.screenshot({path:path.join(output,'21-tabla-fuentes-columna.png')});
+   console.log('Rewritten table column and mixed sources passed');await browser.close();server.kill();process.exit(0);
+ }
+
  await page.getByLabel('Correo a editar').selectOption('summary');await page.getByText('Todavía no hay artículos',{exact:true}).waitFor();
  await page.screenshot({path:path.join(output,'06-lista-vacia.png')});
  await page.getByLabel('Correo a editar').selectOption('newsletter');await page.getByRole('heading',{name:'Ideas para tu próxima escapada',exact:true}).waitFor();
