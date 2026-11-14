@@ -66,6 +66,18 @@ export const isSafeInlineExpression = (value: string) => {
 };
 export const safeUrl = (value: string) => /^\s*(?:javascript|data|vbscript):/i.test(value) ? "#" : value;
 
+/** Block types positioned as a whole box among siblings — alignment moves the box (margin), not its text.
+ * Buttons use `display:table` (the email-safe way to centre a shrink-to-fit element) instead of `block`,
+ * which would stretch them to the container's full width. */
+export const positionAlignedBlockTypes = ["image", "button", "table", "divider", "component", "container", "if"] as const;
+export function positionAlignStyles(position: "left" | "center" | "right", blockType: string, currentDisplay?: string): Record<string, string> {
+  return {
+    display: currentDisplay === "flex" || currentDisplay === "grid" ? currentDisplay : blockType === "button" ? "table" : "block",
+    marginLeft: position === "left" ? "0" : "auto",
+    marginRight: position === "right" ? "0" : "auto",
+  };
+}
+
 const firstArray = (tokens: EmailToken[]) =>
   tokens.find(token => Array.isArray(token.sample) && /^[\w$]+$/.test(token.varName))?.varName ?? "items";
 
@@ -164,7 +176,7 @@ export function emailBlocksToHtml(blocks: EmailBlock[], options: { editorMetadat
   collectClassRules(blocks);
   const markup = blocks.map(block => {
     switch (block.type) {
-      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey), attributesFor(block, {}, !!options.editorMetadata));
+      case "component": return componentHtml(block,options.components?.find(component=>component.key===block.componentKey), attributesFor({...block,attributes:Object.fromEntries(Object.entries(block.attributes || {}).filter(([name])=>!name.startsWith("data-ee-component") && name!=="th:with"))}, {}, !!options.editorMetadata));
       case "html": return block.html;
       case "heading": {
         const level = block.level ?? 2;
@@ -177,14 +189,14 @@ export function emailBlocksToHtml(blocks: EmailBlock[], options: { editorMetadat
         : `<span${attributesFor(block, {}, !!options.editorMetadata)}></span>`;
       case "button": {
         const hrefAttribute = block.hrefMode !== "text" && block.href.includes("${") ? templateExpression(block.href) : undefined;
-        return `<a${attributesFor(block, {
+        const buttonStyles = { display: "inline-block", padding: "12px 22px", background: "#315ee8", borderRadius: "6px", color: "#fff", textDecoration: "none", fontWeight: "600", ...block.styles };
+        return `<a${attributesFor({ ...block, styles: buttonStyles }, {
           ...(hrefAttribute ? { "th:href": `\${${hrefAttribute}}` } : { href: block.href }),
           ...(block.textExpression && isSafeInlineExpression(block.textExpression) ? { "th:text": `\${${block.textExpression}}` } : {}),
-          style: "display:inline-block;padding:12px 22px;background:#315ee8;border-radius:6px;color:#fff;text-decoration:none;font-weight:600",
         }, !!options.editorMetadata)}>${parseInlineText(block.text).map(node=>inlineNodeToHtml(node,!!options.editorMetadata)).join("")}</a>`;
       }
       case "image": return `<img${attributesFor({ ...block, styles: { maxWidth: "100%", height: "auto", ...block.styles } }, { ...(block.srcMode !== "text" && block.src.includes("${") ? {"th:src":`\${${templateExpression(block.src)}}`} : {src:block.src}), alt: block.alt, width: block.width }, !!options.editorMetadata)} />`;
-      case "divider": return `<hr${attributesFor(block, { style: `border:0;border-top:1px solid ${block.color};margin:16px 0` }, !!options.editorMetadata)} />`;
+      case "divider": return `<hr${attributesFor({ ...block, styles: { border: "0", borderTop: `1px solid ${block.color}`, margin: "12px 0", ...block.styles } }, {}, !!options.editorMetadata)} />`;
       case "spacer": return `<div${attributesFor(block, { style: `height:${Math.max(0, Math.min(Number(block.height) || 0, 1000))}px;line-height:${Math.max(0, Math.min(Number(block.height) || 0, 1000))}px;font-size:1px` }, !!options.editorMetadata)}>&nbsp;</div>`;
       case "table": {
         const fields = block.fields.filter(safeExpression);

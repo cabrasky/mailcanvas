@@ -1,9 +1,10 @@
+import SpacingInspector from "./SpacingInspector";
 import ImageInspector from "./ImageInspector";
 import ValueInput from "./ValueInput";
 import { singleVariable } from "../../services/valueSyntax";
 import { useMemo, useRef, useState } from "react";
 import type React from "react";
-import type { EmailBlock } from "../../services/emailBlocks";
+import { positionAlignedBlockTypes, positionAlignStyles, type EmailBlock } from "../../services/emailBlocks";
 import { inlineTextOf, markerFor, parseInlineText, removeInlineRange, insertInlineVariable } from "../../services/inlineTextModel";
 import type { EmailToken } from "../../services/emailTemplateRenderer";
 import InlineSyntaxEditor from "./InlineSyntaxEditor";
@@ -73,6 +74,8 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
     <div className="ee-inspector-empty"><span>◈</span><strong>Selecciona un bloque</strong><p>Elige una pieza del lienzo o de las capas para editar su contenido y apariencia.</p></div>
   </aside>;
 
+  const isPositionAligned = (positionAlignedBlockTypes as readonly string[]).includes(block.type);
+
   return <aside className="ee-inspector" style={style} aria-label="Inspector de propiedades">
     <div className="ee-inspector-top"><span className="ee-eyebrow">{typeTitle[block.type].toUpperCase()}</span><small>{block.id}</small></div>
     <div className="ee-inspector-tabs" role="tablist" aria-label="Propiedades del bloque">{([["content","Contenido"],["design","Diseño"],["advanced","Avanzado"]] as const).map(([value,label])=><button role="tab" key={value} aria-selected={tab===value} onClick={()=>setInspectorView({id:block.id,tab:value})}>{label}</button>)}</div>
@@ -136,17 +139,39 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
             {block.type !== "image" && <div className="ee-field"><span>Texto</span><ColorInput label="Color del texto" value={block.styles?.color ?? ""} onChange={color => patch({ styles: { ...block.styles, color } })} placeholder="#172033" /></div>}
             <div className="ee-field"><span>Fondo</span><ColorInput label="Color del fondo" value={block.styles?.backgroundColor ?? ""} onChange={backgroundColor => patch({ styles: { ...block.styles, backgroundColor } })} /></div>
             {block.type !== "image" && <LengthInput label="Tamaño del texto" value={block.styles?.fontSize ?? ""} onChange={fontSize => patch({ styles: { ...block.styles, fontSize } })} placeholder="16px" />}
-            <LengthInput label="Espaciado interior" value={block.styles?.padding ?? ""} onChange={padding => patch({ styles: { ...block.styles, padding } })} />
+
             <LengthInput label="Radio de las esquinas" value={block.styles?.borderRadius ?? ""} onChange={borderRadius => patch({ styles: { ...block.styles, borderRadius } })} placeholder="8px" />
+            <LengthInput label="Altura" value={block.styles?.height ?? ""} onChange={height => patch({ styles: { ...block.styles, height, boxSizing: "border-box" } })} placeholder="auto" />
             <LengthInput label="Ancho máximo" value={block.styles?.maxWidth ?? ""} onChange={maxWidth => patch({ styles: { ...block.styles, maxWidth } })} placeholder="600px" />
           </div>
-          <div className="ee-field"><span>Alineación</span>
-            <div className="ee-alignment-control" role="group" aria-label={block.type === "image" ? "Posición de la imagen" : "Alineación del texto"}>
-              {([["left", "⇤", "Izquierda"], ["center", "↔", "Centrar"], ["right", "⇥", "Derecha"]] as const).map(([value, icon, name]) =>
-                <button key={value} className={block.styles?.textAlign === value ? "selected" : ""} aria-label={name} aria-pressed={block.styles?.textAlign === value}
-                  type="button" title={name} onClick={() => onPatch(block.id, { styles: { ...block.styles, textAlign: value, ...(block.type === "image" ? { display: "block", marginLeft: value === "left" ? "0" : "auto", marginRight: value === "right" ? "0" : "auto" } : {}) } })}><span aria-hidden="true">{icon}</span><span>{name}</span></button>)}
+          <SpacingInspector key={block.id} block={block} onChange={styles=>patch({styles})} />
+          <div className="ee-field"><span>{isPositionAligned ? "Posición del bloque" : "Alineación del texto"}</span>
+            <div className="ee-alignment-control" role="group" aria-label={isPositionAligned ? "Posición del bloque" : "Alineación del texto"}>
+              {([["left", "⇤", "Izquierda"], ["center", "↔", "Centrar"], ["right", "⇥", "Derecha"]] as const).map(([value, icon, name]) => {
+                const current = isPositionAligned
+                  ? (block.styles?.marginLeft === "auto" ? (block.styles?.marginRight === "auto" ? "center" : "right") : "left")
+                  : block.styles?.textAlign;
+                return <button key={value} className={current === value ? "selected" : ""} aria-label={name} aria-pressed={current === value}
+                  type="button" title={name} onClick={() => onPatch(block.id, { styles: isPositionAligned
+                    ? { ...block.styles, ...positionAlignStyles(value, block.type, block.styles?.display) }
+                    : { ...block.styles, textAlign: value } })}><span aria-hidden="true">{icon}</span><span>{name}</span></button>;
+              })}
             </div>
           </div>
+
+          {!isPositionAligned && <div className="ee-field"><span>Posición del bloque</span>
+            <div className="ee-alignment-control" role="group" aria-label="Posición del bloque">
+              {([["left","Bloque a la izquierda"],["center","Bloque al centro"],["right","Bloque a la derecha"]] as const).map(([value,label])=>{
+                const current=block.styles?.marginLeft === "auto" ? block.styles?.marginRight === "auto" ? "center" : "right" : "left";
+                return <button type="button" key={value} aria-label={label} aria-pressed={current === value} onClick={()=>patch({styles:{...block.styles,...positionAlignStyles(value,block.type,block.styles?.display)}})}>{label}</button>;
+              })}
+            </div>
+          </div>}
+          {(["component","container","rich","paragraph","heading"].includes(block.type)) && <div className="ee-field"><span>Alineación vertical del contenido</span>
+            <div className="ee-alignment-control" role="group" aria-label="Alineación vertical del contenido">
+              {([["flex-start","Arriba"],["center","Centro vertical"],["flex-end","Abajo"]] as const).map(([value,label]) => <button type="button" key={value} aria-label={label} aria-pressed={(block.styles?.justifyContent || block.styles?.alignContent || "flex-start") === value} onClick={()=>patch({styles:{...block.styles,...(block.type === "component" || block.type === "container" ? {display:"flex",flexDirection:"column",justifyContent:value} : {alignContent:value})}})}>{label}</button>)}
+            </div><small>Aumenta la altura del bloque para dejar espacio sobre o bajo su contenido.</small>
+          </div>}
 
         </div>
       </details>

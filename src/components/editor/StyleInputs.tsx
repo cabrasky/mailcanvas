@@ -26,7 +26,7 @@ export function LengthInput({ label, value, onChange, placeholder = "12px" }: {
   return <div className="ee-field ee-length-field">
     <div className="ee-style-field-heading"><label htmlFor={id}>{label}</label><button type="button" title="Editar una expresión CSS o varias medidas" aria-label={`CSS personalizado: ${label}`} aria-pressed={custom} onClick={() => setCustom(!custom)}>CSS</button></div>
     {custom ? <input id={id} aria-label={label} className="ee-input" value={value} placeholder={placeholder} onChange={event => onChange(event.target.value)} /> : <div className="ee-length-input">
-      <input id={id} aria-label={label} className="ee-input" type="number" min="0" step="any" value={parsed?.[1] ?? ""} placeholder={placeholder.match(LENGTH)?.[1]} onChange={event => {
+      <input id={id} aria-label={label} className="ee-input" type="number" min="0" step="any" value={parsed?.[1] ?? ""} placeholder={placeholder.match(LENGTH)?.[2] === unit ? placeholder.match(LENGTH)?.[1] : undefined} onChange={event => {
         const next = event.target.value;
         if (next === "" || Number(next) >= 0) onChange(next === "" ? "" : `${next}${unit}`);
       }} />

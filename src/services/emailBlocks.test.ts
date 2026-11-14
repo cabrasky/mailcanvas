@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  createEmailBlock, emailBlocksToHtml, insertEmailBlock, moveEmailBlock, removeEmailBlock,
+  createEmailBlock, emailBlocksToHtml, insertEmailBlock, moveEmailBlock, positionAlignStyles, removeEmailBlock,
   moveEmailBlockToContainer, parseEmailHtmlToBlocks, updateEmailBlock, type EmailBlock,
 } from "./emailBlocks";
 
@@ -122,4 +122,30 @@ describe("emailBlocks", () => {
     expect(html).toContain('th:href="\${enlace}"');
     expect(html).toContain("Seguir mi pedido");
   });
+
+  it("lets custom button and divider styles override the built-in defaults in the exported HTML", () => {
+    const button = createEmailBlock("button", tokens, "button-1");
+    const styledButton: EmailBlock = button.type === "button"
+      ? { ...button, styles: { ...positionAlignStyles("center", "button"), background: "#111111", padding: "4px" } }
+      : button;
+    const divider = createEmailBlock("divider", tokens, "divider-1");
+    const styledDivider: EmailBlock = { ...divider, styles: { margin: "4px 0" } };
+    const html = emailBlocksToHtml([styledButton, styledDivider]);
+    expect(html).toContain("display:table");
+    expect(html).toContain("margin-left:auto");
+    expect(html).toContain("background:#111111");
+    expect(html).toContain("padding:4px");
+    expect(html).not.toContain("padding:12px 22px");
+    expect(html).toContain("margin:4px 0");
+    expect(html).not.toContain("margin:16px 0");
+  });
+});
+
+it("keeps resized containers and conditions after exporting and reopening",()=>{
+  const blocks=parseEmailHtmlToBlocks('<div style="width:230px"><p>Dirección</p></div><div th:if="${nombre} != null"><p>Ahorro</p></div>');
+  expect(blocks.map(block=>block.type)).toEqual(['container','if']);
+  const resized=blocks.map(block=>({...block,styles:{...block.styles,width:'210px',height:'90px',boxSizing:'border-box'}}));
+  const reopened=parseEmailHtmlToBlocks(emailBlocksToHtml(resized));
+  expect(reopened.map(block=>block.type)).toEqual(['container','if']);
+  for(const block of reopened)expect(block.styles).toMatchObject({width:'210px',height:'90px',boxSizing:'border-box'});
 });

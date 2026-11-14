@@ -164,3 +164,17 @@ Los inputs y controles de modo tienen nombres accesibles, foco visible y estados
 Guardar conserva el correo activo, sus datos y la biblioteca en este navegador. No hay autoguardado ni sincronización entre pestañas. Probar funciones permite simular errores de guardado, editar datos, importar y exportar. No existe un servidor de correo conectado y no se envían mensajes. Las imágenes subidas son temporales de la sesión; la integración real debe proporcionar su almacenamiento.
 
 La preview implementa un subconjunto de Thymeleaf; no ejecuta todo SpringEL ni el dialecto Layout completo. Antes de enviar, valida el resultado con el motor del servidor y los clientes de correo objetivo.
+
+## Cambiar tamaño y posición en el lienzo
+
+Selecciona una imagen o una instancia de componente. Arrastra un tirador lateral o de esquina para cambiar su tamaño; las imágenes mantienen su proporción. Arrastra directamente la imagen seleccionada en horizontal: una guía rosa marca el borde o centro de su contenedor. Arrástrala en vertical para reordenarla entre los bloques: la línea de inserción indica dónde quedará al soltar. No hay botón de alineación. Los lados muestran cursores horizontales o verticales; las esquinas, diagonales.
+
+Cada gesto genera un solo cambio para Deshacer. Escape cancela el gesto. Con un tirador enfocado, las flechas ajustan 1 px (Mayús: 10 px). Con la imagen enfocada, las flechas izquierda/derecha ajustan la alineación e Inicio centra. El ancho y los márgenes se guardan en el HTML y se reflejan en el inspector.
+
+## Guías, unidades y altura
+
+Al seleccionar una imagen o componente, la etiqueta del lienzo muestra ancho y alto con sus unidades: fijo (px), relativo (%, em, rem, vw, vh) o automático. También muestra los márgenes en orden arriba/derecha/abajo/izquierda y el espaciado interior; las bandas naranjas representan el margen calculado.
+
+Los tiradores superior e inferior cambian solo la altura. Los laterales cambian el ancho. Las esquinas de una imagen mantienen la proporción; en componentes modifican ambos ejes. Una imagen con altura explícita usa ajuste «contain» para evitar deformarla. En Diseño, «Altura» y «Alineación vertical del contenido» permiten situar texto y contenido arriba, al centro o abajo.
+
+Durante el redimensionado, las guías ajustan medidas cercanas a las del contenedor, a la mitad de su ancho y a las de bloques hermanos. Mantén Alt para ignorar el ajuste. Las unidades relativas existentes se conservan al arrastrar; un tamaño automático pasa a píxeles cuando se fija manualmente. Los límites de ancho existentes siguen aplicándose.

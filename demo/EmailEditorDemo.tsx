@@ -1,3 +1,4 @@
+import { previewDocument, PREVIEW_SANDBOX } from "../src/services/previewDocument";
 import { useEffect, useMemo, useRef, useState } from "react";
 import EmailEditor from "../src/components/EmailEditor";
 import { renderEmail } from "../src/services/emailTemplateRenderer";
@@ -71,7 +72,7 @@ export default function EmailEditorDemo() {
       onReset={() => setTool("reset")} onSendTest={() => setTool("test")} onServerPreview={() => setTool("preview")} title={active.name} />
     {libraryOpen && <ComponentLibraryManager components={components} onChange={setComponents} onClose={() => setLibraryOpen(false)} />}
     {tool && <DemoTools tool={tool} samples={data} onSamples={setData} failNext={failNext} onFailNext={setFailNext} onClose={() => setTool(null)} onExport={exportFile} onImport={importFile} onReset={() => { const defaults = initialDemo(); setHtml(defaults.documents[activeKey]); setData(defaults.samples[activeKey]); setNotice("Ejemplo original restaurado como borrador."); }} preview={final.html} />}
-    <section className="demo-final"><div className="demo-final-heading"><span className="demo-overline">RESULTADO LOCAL</span><h2>{active.name}</h2><p>La misma vista previa que el editor, a tamaño real. Usa Probar funciones para cambiar datos y descargar el HTML.</p></div><div className="demo-final-frame"><iframe title="Correo final renderizado a tamaño real" sandbox="allow-same-origin" srcDoc={final.html} /></div>{final.warnings.length > 0 && <p className="demo-final-warning">{final.warnings.slice(0, 4).join(" · ")}</p>}</section>
+    <section className="demo-final"><div className="demo-final-heading"><span className="demo-overline">RESULTADO LOCAL</span><h2>{active.name}</h2><p>La misma vista previa que el editor, a tamaño real. Usa Probar funciones para cambiar datos y descargar el HTML.</p></div><div className="demo-final-frame"><iframe title="Correo final renderizado a tamaño real" sandbox={`allow-same-origin ${PREVIEW_SANDBOX}`} srcDoc={previewDocument(final.html)} /></div>{final.warnings.length > 0 && <p className="demo-final-warning">{final.warnings.slice(0, 4).join(" · ")}</p>}</section>
     <footer className="demo-bottom"><span>ENTORNO DE DEMOSTRACIÓN</span><span>Guardado local · imágenes subidas temporales · sin servidor ni envío real</span></footer>
   </main>;
 }

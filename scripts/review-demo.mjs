@@ -23,6 +23,23 @@ try {
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.ee-email-page img')).every(image=>image.complete && image.naturalWidth > 0));
  assert.notEqual(await page.locator('.ee-email-page img').first().getAttribute('src'),'#');
  await page.screenshot({path:path.join(output,'01-boletin.png')});
+ await page.getByRole('button',{name:/Lado a lado/}).click();
+ await page.getByRole('button',{name:/375px/}).click();
+ const mobile=page.frameLocator('iframe[title="Correo renderizado localmente"]');
+ await mobile.locator('h2').first().waitFor();
+ const mobileSize=await mobile.locator('html').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
+ assert.ok(mobileSize.scroll<=mobileSize.client+1,`Mobile overflow: ${JSON.stringify(mobileSize)}`);
+ await page.screenshot({path:path.join(output,'14-vista-movil.png')});
+ const previewLink=mobile.locator('a[href^="https:"]').first();
+ const destinationUrl=await previewLink.getAttribute('href');
+ await page.context().route(destinationUrl,route=>route.fulfill({status:200,contentType:'text/html',body:'<h1>Destino de prueba</h1>'}));
+ const popupEvent=page.waitForEvent('popup');
+ await previewLink.click();
+ const popup=await popupEvent;await popup.getByRole('heading',{name:'Destino de prueba'}).waitFor();await popup.close();
+ assert.ok(page.url().startsWith(`http://127.0.0.1:${port}/`));
+
+ await page.getByRole('button',{name:/Lado a lado/}).click();
+
 
  await page.locator('.ee-component-instance').filter({has:page.locator('img')}).click();
  await page.getByRole('tab',{name:'Diseño',exact:true}).click();
@@ -80,6 +97,174 @@ try {
    await page.screenshot({path:path.join(output,`09-imagen-${name}.png`)});
  }
  await fs.writeFile(path.join(output,'image-sizes.json'),JSON.stringify(imageSizes,null,2));
- assert.deepEqual(errors,[]);await fs.writeFile(path.join(output,'report.json'),JSON.stringify({checks:['six templates','newsletter image','structured sample editing','local draft recovery','failed save stays dirty','retry save','JSON export','HTML import','confirmed reset','typed component defaults','cross-template component update','local image upload','responsive sizing'],errors},null,2));
+
+ await page.getByLabel('Unidad de Ancho máximo',{exact:true}).selectOption('%');
+ await page.getByRole('spinbutton',{name:'Ancho máximo',exact:true}).fill('100');
+ await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).scrollIntoViewIfNeeded();
+ let handle=await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).boundingBox();
+ await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);
+ await page.mouse.down();await page.mouse.move(handle.x+handle.width/2+76,handle.y+handle.height/2,{steps:10});await page.mouse.up();
+ let transformed=await page.locator('img.ee-block-selected').evaluate(img=>({width:img.width,height:img.height}));
+ assert.equal(transformed.width,140);assert.equal(transformed.height,70);
+ await page.getByRole('button',{name:'Deshacer',exact:true}).click();
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.width),64);
+ await page.getByRole('button',{name:'Rehacer',exact:true}).click();
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.width),140);
+ const align=await page.getByRole('button',{name:'Mover imagen para alinear',exact:true}).boundingBox();
+ const parentBox=await page.locator('img.ee-block-selected').evaluate(img=>{const r=img.parentElement.getBoundingClientRect();return {x:r.x,width:r.width};});
+ await page.mouse.move(align.x+align.width/2,align.y+align.height/2);await page.mouse.down();await page.mouse.move(parentBox.x+parentBox.width-20,align.y+align.height/2,{steps:10});await page.mouse.up();
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.style.marginLeft),'auto');
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.style.marginRight),'0px');
+ handle=await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).boundingBox();
+ await page.mouse.move(handle.x+7,handle.y+7);await page.mouse.down();await page.mouse.move(handle.x-30,handle.y+7,{steps:5});await page.keyboard.press('Escape');await page.mouse.up();
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.width),140);
+ await page.getByRole('button',{name:'Mover imagen para alinear',exact:true}).press('Home');
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.style.marginRight),'auto');
+ for(let i=0;i<5;i++)await page.getByRole('button',{name:'Alejar',exact:true}).click();
+ handle=await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).boundingBox();
+ await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();await page.mouse.move(handle.x+handle.width/2+25,handle.y+handle.height/2,{steps:5});await page.mouse.up();
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.width),190);
+ await page.getByRole('button',{name:'50%',exact:true}).click();
+ await page.locator('img.ee-block-selected').scrollIntoViewIfNeeded();
+
+ // Drag the actual image from the right edge to the centre, not just the toolbar.
+ await page.getByRole('button',{name:'Mover imagen para alinear',exact:true}).press('ArrowRight');
+ const surface=page.getByRole('button',{name:'Mover imagen para alinear',exact:true});
+ await surface.scrollIntoViewIfNeeded();
+ const surfaceBox=await surface.boundingBox();
+ const container=await page.locator('img.ee-block-selected').evaluate(img=>{const r=img.parentElement.getBoundingClientRect();return {x:r.x,width:r.width};});
+ await page.mouse.move(surfaceBox.x+surfaceBox.width/2,surfaceBox.y+surfaceBox.height/2);
+ await page.mouse.down();await page.mouse.move(container.x+container.width/2,surfaceBox.y+surfaceBox.height/2,{steps:12});
+ await page.locator('.ee-transform-guide[data-alignment="Centro"]').waitFor();
+ await page.screenshot({path:path.join(output,'11-guia-centrado.png')});
+ await page.mouse.up();
+ const centered=await page.locator('img.ee-block-selected').evaluate(img=>{const a=img.getBoundingClientRect(),p=img.parentElement.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2);});
+ assert.ok(centered<1,'Direct image drag must centre the object');
+ assert.equal(await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).evaluate(el=>getComputedStyle(el).cursor),'ew-resize');
+ assert.equal(await page.getByRole('button',{name:'Redimensionar desde arriba',exact:true}).evaluate(el=>getComputedStyle(el).cursor),'ns-resize');
+ assert.equal(await page.getByRole('button',{name:'Redimensionar desde esquina inferior derecha',exact:true}).evaluate(el=>getComputedStyle(el).cursor),'nwse-resize');
+ await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).scrollIntoViewIfNeeded();
+ const lower=await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).boundingBox();
+ await page.mouse.move(lower.x+7,lower.y+7);await page.mouse.down();await page.mouse.move(lower.x+7,lower.y+7-20,{steps:5});await page.mouse.up();
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.width),190);
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.height),75);
+ await page.screenshot({path:path.join(output,'10-tiradores-imagen.png')});
+ assert.equal(await page.getByRole('button',{name:'Arrastrar para alinear',exact:true}).count(),0);
+ const imageId=await page.locator('img.ee-block-selected').getAttribute('data-ee-block-id');
+ const footer=page.locator('.ee-component-instance').last();
+ await footer.scrollIntoViewIfNeeded();
+ const from=await page.getByRole('button',{name:'Mover imagen para alinear',exact:true}).boundingBox();
+ const destination=await footer.boundingBox();
+ await page.mouse.move(from.x+from.width/2,from.y+from.height/2);await page.mouse.down();
+ await page.mouse.move(from.x+from.width/2,from.y+from.height/2-12,{steps:3});
+ await page.mouse.move(destination.x+destination.width/2,destination.y+2,{steps:15});
+ await page.locator('.ee-overlay-insertion').waitFor();
+ await page.screenshot({path:path.join(output,'12-mover-vertical.png')});
+ await page.mouse.up();
+ assert.ok(await footer.evaluate((el,id)=>!!(document.querySelector(`[data-ee-block-id="${id}"]`).compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING),imageId));
+
+
+ const metric=page.locator('.ee-component-instance').filter({has:page.getByText('40',{exact:true})});
+ await metric.click();await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+ const beforeMetric=await metric.boundingBox();
+ await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).scrollIntoViewIfNeeded();
+ const metricHandle=await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).boundingBox();
+ await page.keyboard.down("Alt");await page.mouse.move(metricHandle.x+7,metricHandle.y+7);await page.mouse.down();await page.mouse.move(metricHandle.x+7,metricHandle.y+87,{steps:10});await page.mouse.up();await page.keyboard.up("Alt");
+ const afterMetric=await metric.boundingBox();
+ assert.ok(Math.abs(afterMetric.width-beforeMetric.width)<1,'Bottom handle must not change component width');
+ assert.ok(Math.abs(afterMetric.height-beforeMetric.height-80)<1,'Bottom handle must change height');
+ await page.getByRole('button',{name:'Centro vertical',exact:true}).click();
+ const centerGap=await metric.evaluate(el=>{const outer=el.getBoundingClientRect(),inner=el.querySelector(':scope > div').getBoundingClientRect();return Math.abs((outer.top+outer.bottom-inner.top-inner.bottom)/2);});
+ assert.ok(centerGap<1,'Component content must be vertically centred');
+
+ assert.equal(await metric.evaluate(el=>{const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(node.textContent.trim()==="'")return true;}return false;}),false,'Metric must not render a stray quote');
+ await page.getByRole('button',{name:'Centro vertical',exact:true,pressed:true}).waitFor();
+ const measurementRect=await page.locator('.ee-transform-measurements').boundingBox();
+ const nextActionRect=await page.locator('.ee-email-page a').filter({hasText:'Consultar la agenda'}).boundingBox();
+ assert.ok(measurementRect.y+measurementRect.height<=nextActionRect.y || measurementRect.y>=nextActionRect.y+nextActionRect.height,'Measurement label must not cover the next CTA');
+ const maxWidthInput=page.getByRole('spinbutton',{name:'Ancho máximo',exact:true});
+ if(await maxWidthInput.inputValue()==='' && await page.getByLabel('Unidad de Ancho máximo',{exact:true}).inputValue()==='%')assert.notEqual(await maxWidthInput.getAttribute('placeholder'),'600');
+ await page.screenshot({path:path.join(output,'13-altura-alineacion-vertical.png')});
+
+ if(process.argv.includes('--html-sizing-only')) {
+   await page.getByRole('button',{name:'Probar funciones',exact:true}).click();
+   const d=page.getByRole('dialog',{name:'Prueba las funciones del editor'});
+   await d.getByRole('button',{name:'Archivos',exact:true}).click();
+   await d.getByLabel('Importar archivo de demo').setInputFiles({name:'bloques.html',mimeType:'text/html',buffer:Buffer.from('<div style="display:flex;gap:14px"><div style="width:230px;padding:14px;background:#eff2ff"><strong>ENTREGA A</strong><p>Calle del Prado, 18</p></div><div style="width:230px;padding:14px;background:#eff2ff">Seguimiento</div></div><div th:if="${nombre} != null" style="background:#effaf3;padding:12px"><p style="width:386px;text-align:center">Has ahorrado en este pedido</p></div>')});
+   const address=page.locator('[data-ee-block-kind="container"]').filter({has:page.getByText('ENTREGA A',{exact:true})}).last();
+   await address.click({position:{x:5,y:5}});
+   await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).press('ArrowLeft');
+   const addressWidth=await address.evaluate(el=>el.style.width);
+   assert.notEqual(addressWidth,'230px');
+   const condition=page.locator('[data-ee-block-kind="if"]');
+   await condition.click({position:{x:150,y:10}});
+   const initial=await condition.boundingBox();
+   await page.getByRole('button',{name:'Redimensionar desde abajo',exact:true}).press('ArrowDown');
+   const after=await condition.boundingBox();
+   assert.ok(after.height>initial.height);
+   assert.equal(after.width,initial.width);
+   await page.screenshot({path:path.join(output,'17-contenedores-condiciones.png')});
+
+   const textBox=await condition.locator('p').boundingBox();
+   await page.mouse.click(textBox.x+textBox.width/2,textBox.y+textBox.height/2);
+   await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+   const dragSurface=page.getByRole('button',{name:'Mover bloque para alinear',exact:true});
+   const surfaceBox=await dragSurface.boundingBox();
+   const contentCenter=await condition.evaluate(el=>{const r=el.getBoundingClientRect();return (r.left+r.right)/2;});
+   await page.mouse.move(surfaceBox.x+surfaceBox.width/2,surfaceBox.y+surfaceBox.height/2);
+   await page.mouse.down();
+   await page.mouse.move(contentCenter,surfaceBox.y+surfaceBox.height/2,{steps:10});
+   await page.locator('.ee-transform-guide[data-alignment="Centro"]').waitFor();
+   await page.mouse.up();
+   const middle=await condition.locator('p').evaluate(el=>{const a=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2);});
+   assert.ok(middle<1,'Savings box must be centred inside its parent');
+   await page.screenshot({path:path.join(output,'18-bloque-ahorro-centrado.png')});
+   console.log('HTML container and conditional resizing passed');
+   await browser.close();server.kill();process.exit(0);
+ }
+ if(process.argv.includes('--vertical-only')) {
+   console.log('Vertical sizing visual regression passed');
+   await browser.close();server.kill();process.exit(0);
+ }
+
+ await page.getByRole('button',{name:'Abajo',exact:true}).click();
+ const bottomGap=await metric.evaluate(el=>el.getBoundingClientRect().bottom-el.querySelector(':scope > div').getBoundingClientRect().bottom);
+ assert.ok(bottomGap<1,'Component content must align to bottom');
+
+ await page.locator(`img[data-ee-block-id="${imageId}"]`).click();
+ await page.getByRole('tab',{name:'Contenido',exact:true}).click();
+ await page.getByRole('button',{name:'Adaptable',exact:true}).click();
+ await page.getByRole('spinbutton',{name:'Ancho adaptable',exact:true}).fill('40');
+ await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).scrollIntoViewIfNeeded();
+ const relHandle=await page.getByRole('button',{name:'Redimensionar desde derecha',exact:true}).boundingBox();
+ const relativeStart=await page.locator('img.ee-block-selected').evaluate(img=>{const p=img.parentElement,css=getComputedStyle(p);return {available:p.clientWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight),width:img.getBoundingClientRect().width};});
+ await page.mouse.move(relHandle.x+7,relHandle.y+7);await page.mouse.down();await page.mouse.move(relHandle.x+7+relativeStart.available/2-relativeStart.width-2,relHandle.y+7,{steps:8});
+ await page.locator('.ee-transform-size-guide').waitFor();
+ await page.screenshot({path:path.join(output,'15-guia-medida-relativa.png')});
+ await page.mouse.up();
+ assert.equal(await page.locator('img.ee-block-selected').evaluate(img=>img.style.width),'50%');
+ await page.locator('.ee-transform-measurements').filter({hasText:'50% · relativo'}).waitFor();
+ const title=page.getByRole('heading',{name:'Nos vemos en el próximo encuentro',exact:true});
+ await title.click();await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+ await page.getByRole('spinbutton',{name:'Altura',exact:true}).fill('180');
+ await page.getByRole('button',{name:'Centro vertical',exact:true}).click();
+ const textGap=await title.evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect(),box=el.getBoundingClientRect();return Math.abs((text.top+text.bottom-box.top-box.bottom)/2);});
+ assert.ok(textGap<4,`Text not vertically centred: ${textGap}`);
+
+ await page.getByRole('button',{name:'Probar funciones',exact:true}).click();
+ const importDialog=page.getByRole('dialog',{name:'Prueba las funciones del editor'});
+ await importDialog.getByRole('button',{name:'Archivos',exact:true}).click();
+ await importDialog.getByLabel('Importar archivo de demo').setInputFiles({name:'overflow.html',mimeType:'text/html',buffer:Buffer.from('<div style="width:900px"><p>Desbordamiento de prueba</p></div>')});
+ await page.getByRole('button',{name:/Lado a lado/}).click();
+ await page.getByRole('button',{name:/375px/}).click();
+ const issue=page.getByRole('button',{name:/Desbordamiento de prueba.*px \/ vista/});
+ await issue.first().waitFor();
+ await issue.first().click({force:true});
+ assert.ok(await page.locator('.ee-email-page .ee-block-selected').count());
+ const previewFrame=page.frameLocator('iframe[title="Correo renderizado localmente"]');
+ await previewFrame.getByText('Desbordamiento de prueba',{exact:true}).click();
+ await page.locator('.ee-preview-measurements').filter({hasText:'px en móvil'}).waitFor();
+ await page.screenshot({path:path.join(output,'16-seleccion-desbordamiento.png')});
+ assert.deepEqual(errors,[]);await fs.writeFile(path.join(output,'report.json'),JSON.stringify({checks:['six templates','newsletter image','structured sample editing','local draft recovery','failed save stays dirty','retry save','JSON export','HTML import','confirmed reset','typed component defaults','cross-template component update','local image upload','responsive sizing','mouse resize','single-step undo and redo','drag alignment','Escape cancels gesture','keyboard centering','resize at 50% zoom'],errors},null,2));
  console.log('Demo review passed:',output);
 } finally { if(browser)await browser.close();server.kill(); }

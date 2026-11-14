@@ -7,6 +7,15 @@ afterEach(cleanup);
 const token = { token: "{{nombre}}", label: "Nombre", varName: "nombre", sample: "Ana" };
 
 describe("EmailEditor", () => {
+  it("cancels canvas link activation without blocking block selection",()=>{
+    const {container}=render(<EmailEditor value='<p>Visita <a href="https://example.test/destination" target="_blank"><strong>el enlace</strong></a></p><details><summary>Abrir detalle</summary>Contenido</details>' onChange={()=>{}} />);
+    const link=container.querySelector('.ee-email-page a')!;
+    expect(fireEvent.click(link.querySelector('strong')!)).toBe(false);
+    expect(container.querySelector('.ee-block-selected')).toBeInTheDocument();
+    expect(fireEvent(link,new MouseEvent('auxclick',{bubbles:true,cancelable:true,button:1}))).toBe(false);
+    expect(fireEvent.click(container.querySelector('.ee-email-page summary')!)).toBe(false);
+  });
+
   it("renders protected server fragments in the canvas without hiding following blocks", () => {
     const { container } = render(<EmailEditor value={'<th:block th:replace="~{emails/fragments/layout :: productTable(${products}, ${totalPrice})}"/><p>Después del pedido</p>'} onChange={() => {}} tokens={[
       { token: "{{productos}}", varName: "products", label: "Productos", sample: [{ name: "Camiseta Yambo", quantity: 2, price: 10 }] },

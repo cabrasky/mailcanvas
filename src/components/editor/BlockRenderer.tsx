@@ -163,14 +163,14 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
   if (block.type === "heading") {
     const level = block.level ?? 2;
     const html = escapeHtmlText(block.text);
-    return <div {...props}>
-      <Editable id={block.id} kind="heading" tag={`h${level}` as "h1" | "h2" | "h3"} html={html} style={blockStyle(block)} className={block.className} ctx={ctx} />
+    return <div {...props} style={blockStyle(block)}>
+      <Editable id={block.id} kind="heading" tag={`h${level}` as "h1" | "h2" | "h3"} html={html} className={block.className} ctx={ctx} />
     </div>;
   }
   if (block.type === "paragraph") {
     const html = escapeHtmlText(block.text);
-    return <div {...props}>
-      <Editable id={block.id} kind="paragraph" tag="p" html={html} style={blockStyle(block)} className={block.className} ctx={ctx} />
+    return <div {...props} style={blockStyle(block)}>
+      <Editable id={block.id} kind="paragraph" tag="p" html={html} className={block.className} ctx={ctx} />
     </div>;
   }
   if (block.type === "rich") {
@@ -191,7 +191,7 @@ function BlockNodeBody({ block, locals, loopId, common: props, ctx }: {
     const src=block.srcMode !== "text" ? resolveCellTemplate(block.src,ctx.tokens,locals) : block.src;
     const looksReal = /^(https?:\/\/|blob:|\/(?!\/))/i.test(src);
     return looksReal
-      ? <img {...props} src={src} alt={block.alt} style={{ maxWidth: "100%", height: "auto", width: block.width ? `${block.width}px` : undefined, ...blockStyle(block) }} draggable={false} />
+      ? <img {...props} src={src} alt={block.alt} style={{ maxWidth: "100%", height: "auto", ...blockStyle(block), width: block.styles?.width || (block.width ? `${block.width}px` : undefined) }} draggable={false} />
       : <div {...props} className={`${props.className} ee-render-image-missing`} style={blockStyle(block)}><span>▧</span>{block.alt || "Imagen"}</div>;
   }
   if (block.type === "divider") {
@@ -275,7 +275,7 @@ function StaticBlock({ block, locals, tokens }: { block: EmailBlock; locals: Rec
     const src = block.srcMode !== "text" ? resolveCellTemplate(block.src, tokens, locals) : block.src;
     const looksReal = /^(https?:\/\/|blob:|\/(?!\/))/i.test(src);
     return <div>{looksReal
-      ? <img src={src} alt={block.alt} style={{ maxWidth: "100%", height: "auto", width: block.width ? `${block.width}px` : undefined, ...style }} draggable={false} />
+      ? <img src={src} alt={block.alt} style={{ maxWidth: "100%", height: "auto", ...style, width: block.styles?.width || (block.width ? `${block.width}px` : undefined) }} draggable={false} />
       : <div className="ee-render-image-missing"><span>▧</span>{block.alt || "Imagen"}</div>}</div>;
   }
   if (block.type === "divider") return <div style={style}><hr style={{ border: 0, borderTop: `1px solid ${block.color}`, margin: "12px 0" }} /></div>;

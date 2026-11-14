@@ -32,6 +32,7 @@ type Props = {
   onDragCommit: () => void;
   onDragCancel: () => void;
   onTableCellSelect: (id: string, fields: string[], additive: boolean) => void;
+  onPatchBlock: (id: string, patch: Partial<EmailBlock>) => void;
   onTableWidthChange: (id: string, width: string) => void;
   onTableColumnWidthChange: (id: string, field: string, width: string) => void;
   onTableColumnLabelChange: (id: string, field: string, label: string) => void;
@@ -45,7 +46,7 @@ type Props = {
 export default function Workspace({
   blocks, tokens, components, selectedIds, hoverId, editingId, tableSelection, drag, zoom, pan,
   onZoomChange, onPanChange, onSelect, onClearSelection, onHover, onStartEdit, onCommitEdit, onContextMenu,
-  onBeginDrag, onDragHover, onDragCommit, onDragCancel, onTableCellSelect, onTableWidthChange,
+  onBeginDrag, onDragHover, onDragCommit, onDragCancel, onTableCellSelect, onTableWidthChange, onPatchBlock,
   onTableColumnWidthChange, onTableColumnLabelChange, onEditVariableExpression,
   canMergeTableCells, canUnmergeTableCells, onMergeTableCells, onUnmergeTableCells,
 }: Props) {
@@ -156,14 +157,19 @@ export default function Workspace({
       onWheel={handleWheel} onPointerDown={beginPan}
       onClick={() => onClearSelection()}>
       <div ref={layerRef} className="ee-canvas-layer" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})` }}>
-        <div className="ee-email-page" onClick={event => { event.stopPropagation(); onClearSelection(); }}>
+        <div className="ee-email-page"
+          onClickCapture={event => { if((event.target as Element).closest("a,area,button,summary,[role='button']"))event.preventDefault(); }}
+          onAuxClickCapture={event => { if((event.target as Element).closest("a,area"))event.preventDefault(); }}
+          onSubmitCapture={event=>event.preventDefault()}
+          onDragStartCapture={event=>event.preventDefault()}
+          onClick={event => { event.stopPropagation(); onClearSelection(); }}>
           <CanvasContext.Provider value={contextValue}>
             {blocks.length
               ? <BlockRenderer blocks={blocks} />
               : <div className="ee-canvas-empty" style={{ color: "#9aa", position: "static" }}><span>◈</span><strong style={{ color: "#556074" }}>Lienzo vacío</strong><p>Arrastra un bloque desde la biblioteca para empezar.</p></div>}
           </CanvasContext.Provider>
         </div>
-        <SelectionOverlay layerRef={layerRef} hoverId={hoverId} selectedIds={selectedIds} drag={drag} zoom={zoom / 100} blocks={blocks} />
+        <SelectionOverlay editingId={editingId} onBeginDrag={onBeginDrag} onContextMenu={onContextMenu} onPatchBlock={onPatchBlock} layerRef={layerRef} hoverId={hoverId} selectedIds={selectedIds} drag={drag} zoom={zoom / 100} blocks={blocks} />
       </div>
     </div>
   </section>;

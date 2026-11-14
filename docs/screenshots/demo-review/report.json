@@ -12,7 +12,13 @@
     "typed component defaults",
     "cross-template component update",
     "local image upload",
-    "responsive sizing"
+    "responsive sizing",
+    "mouse resize",
+    "single-step undo and redo",
+    "drag alignment",
+    "Escape cancels gesture",
+    "keyboard centering",
+    "resize at 50% zoom"
   ],
   "errors": []
 }

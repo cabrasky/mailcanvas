@@ -27,3 +27,10 @@ it("keeps CSS colors intact while offering a native color picker", () => {
   fireEvent.change(screen.getByLabelText("Seleccionar color: Fondo"), { target: { value: "#23834d" } });
   expect(change).toHaveBeenCalledWith("#23834d");
 });
+
+it("does not show a pixel placeholder as a percentage", () => {
+  const {rerender}=render(<LengthInput label="Ancho máximo" value="50%" placeholder="600px" onChange={()=>{}} />);
+  fireEvent.change(screen.getByRole("combobox"),{target:{value:"%"}});
+  rerender(<LengthInput label="Ancho máximo" value="" placeholder="600px" onChange={()=>{}} />);
+  expect(screen.getByRole("spinbutton")).not.toHaveAttribute("placeholder","600");
+});

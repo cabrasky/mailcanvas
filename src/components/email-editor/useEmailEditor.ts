@@ -63,7 +63,7 @@ export function useEmailEditor({ value, onChange, tokens, templateKey, commonEle
     return selectedId ? find(blocks, selectedId) : undefined;
   }, [blocks, selectedId]);
 
-  const preview = useMemo(() => renderEmail(value, tokens, templateKey, commonElements), [value, tokens, templateKey, commonElements]);
+  const preview = useMemo(() => renderEmail(mode === "blocks" ? emailBlocksToHtml(blocks,{components:commonElements.components,editorMetadata:true}) : value, tokens, templateKey, commonElements), [value, blocks, mode, tokens, templateKey, commonElements]);
   const hasThymeleaf = /\bth:/.test(value);
 
   useEffect(() => {

@@ -104,7 +104,7 @@ export default function EmailEditor({ value, onChange, tokens = [], templateKey 
               : moveEmailBlockBefore(blocks, movingId, targetId))}
             onContextMenu={openContextMenu} />}
           {!leftCollapsed && <div className="ee-resize-handle" onPointerDown={startPanelResize("left")} />}
-          <Workspace components={commonElements.components} blocks={blocks} tokens={tokens} selectedIds={selectedIds} hoverId={hoverId} editingId={editingId} tableSelection={tableSelection}
+          <Workspace onPatchBlock={patch} components={commonElements.components} blocks={blocks} tokens={tokens} selectedIds={selectedIds} hoverId={hoverId} editingId={editingId} tableSelection={tableSelection}
             drag={drag} zoom={zoom} pan={pan} onZoomChange={setZoom} onPanChange={setPan}
             onSelect={onSelect} onClearSelection={clearSelection} onHover={setHoverId} onStartEdit={onStartEdit} onCommitEdit={onCommitEdit}
             onContextMenu={openContextMenu} onBeginDrag={beginDrag} onDragHover={onDragHover} onDragCommit={onDragCommit} onDragCancel={onDragCancel}
@@ -132,7 +132,7 @@ export default function EmailEditor({ value, onChange, tokens = [], templateKey 
       {compare && <div className="ee-splitter" role="separator" aria-label="Cambiar ancho del editor y la vista previa" aria-orientation="vertical" aria-valuenow={editorRatio} tabIndex={0}
         onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); resizeEditor(event); }} onPointerMove={resizeEditor}
         onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} />}
-      {compare && <LivePreview style={{ flex: `${100 - editorRatio} 1 0%`, minWidth: 360 }} html={preview.html} warnings={preview.warnings} viewport={viewport} onViewportChange={setViewport} />}
+      {compare && <LivePreview selected={selected} onSelectBlock={id=>{onSelect(id,false);requestAnimationFrame(()=>document.querySelector(`[data-ee-block-id="${CSS.escape(id)}"]`)?.scrollIntoView({block:"nearest"}));}} style={{ flex: `${100 - editorRatio} 1 0%`, minWidth: 360 }} html={preview.html} warnings={preview.warnings} viewport={viewport} onViewportChange={setViewport} />}
     </div>
     {mode === "blocks" && <EditorContextMenu target={contextMenu} onClose={() => setContextMenu(null)} onDuplicate={duplicateBlock} onMove={moveBlock} onDelete={deleteBlock} />}
     <EditorFooter mode={mode} hasThymeleaf={hasThymeleaf} onServerPreview={onServerPreview} onReset={onReset} onSendTest={onSendTest} onSave={onSave} value={value} onSaveComplete={() => setDirty(false)} />

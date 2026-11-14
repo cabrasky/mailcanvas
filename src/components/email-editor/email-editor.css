@@ -533,3 +533,42 @@
 .ee-table-cell-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: #d8cde3; }
 .ee-table-cell-title strong { font-weight: 500; }
 .ee-table-cell-title span { color: #aa98be; font-size: 10px; }
+
+/* Canvas manipulation handles stay separate from the email markup. */
+.ee-transform-controls { position:absolute; pointer-events:none; z-index:10; }
+.ee-transform-controls button { pointer-events:auto; touch-action:none; border:1px solid #7564ff; background:white; color:#35268b; }
+.ee-transform-resize { position:absolute; bottom:-7px; width:14px; height:14px; padding:0; border-radius:2px; cursor:ew-resize; }
+.ee-transform-resize.left { left:-7px; }
+.ee-transform-resize.right { right:-7px; }
+.ee-transform-controls button:focus-visible { outline:3px solid #315ee8; outline-offset:3px; }
+
+.ee-transform-controls .ee-transform-drag-surface { position:absolute; inset:0; width:100%; height:100%; border:0; background:transparent; cursor:grab; padding:0; }
+.ee-transform-controls .ee-transform-drag-surface:active { cursor:grabbing; }
+.ee-transform-resize { z-index:2; bottom:auto; }
+.ee-transform-resize.handle-w { left:-7px; top:calc(50% - 7px); cursor:ew-resize; }
+.ee-transform-resize.handle-e { right:-7px; top:calc(50% - 7px); cursor:ew-resize; }
+.ee-transform-resize.handle-n { top:-7px; left:calc(50% - 7px); cursor:ns-resize; }
+.ee-transform-resize.handle-s { bottom:-7px; left:calc(50% - 7px); cursor:ns-resize; }
+.ee-transform-resize.handle-nw { top:-7px; left:-7px; cursor:nwse-resize; }
+.ee-transform-resize.handle-ne { top:-7px; right:-7px; cursor:nesw-resize; }
+.ee-transform-resize.handle-sw { bottom:-7px; left:-7px; cursor:nesw-resize; }
+.ee-transform-resize.handle-se { bottom:-7px; right:-7px; cursor:nwse-resize; }
+.ee-transform-guide { position:absolute; width:0; border-left:1px dashed #e83eaa; z-index:3; pointer-events:none; }
+.ee-transform-guide span { position:absolute; top:0; left:5px; background:#a51271; color:white; border-radius:3px; padding:2px 5px; font:11px/16px sans-serif; }
+.ee-transform-measurements { position:absolute; top:calc(100% + 12px); left:0; display:flex; flex-direction:column; gap:2px; max-width:420px; width:max-content; padding:5px 8px; border-radius:4px; background:#30264b; color:white; font:11px/16px sans-serif; pointer-events:none; z-index:4; box-shadow:0 2px 6px #0003; }
+.ee-transform-measurements strong { color:#ffb2e5; font-weight:500; }
+.ee-transform-size-guide { position:absolute; inset:0; border:1px dashed #e83eaa; pointer-events:none; }
+.ee-transform-margin { position:absolute; background:repeating-linear-gradient(135deg,#f5a74218 0 5px,#f5a74235 5px 6px); border:1px dashed #d99136; box-sizing:border-box; pointer-events:none; }
+.ee-spacing-inspector { display:grid; gap:12px; margin:12px 0; }
+.ee-spacing-inspector fieldset { min-width:0; border:1px solid var(--border,#48414f); border-radius:8px; padding:12px; }
+.ee-spacing-inspector legend { font-size:12px; padding:0 5px; }
+.ee-spacing-toggle { display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:12px; }
+.ee-reference-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.ee-spacing-inspector summary { cursor:pointer; font-size:12px; padding:6px 0; }
+.ee-preview-measurements { padding:8px 12px; font-size:12px; color:var(--text,#ddd); border-bottom:1px solid var(--border,#45404c); }
+.ee-preview-warnings button { white-space:normal; text-align:left; }
+.ee-alignment-control button[aria-pressed="true"] { background:#493c68; color:#fff; border-color:#9680ff; box-shadow:inset 0 0 0 1px #9680ff; }
+.ee-workspace-tip:has(.ee-transform-measurements) { font-size:0; flex:1; min-width:0; }
+.ee-workspace-tip .ee-transform-measurements { position:static; display:flex; flex-direction:column; width:auto; max-width:100%; padding:0; background:transparent; color:var(--text,#ddd); box-shadow:none; font-size:10px; line-height:14px; gap:0; }
+.ee-workspace-tip .ee-transform-measurements span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ee-workspace-topbar:has(.ee-transform-measurements) { height:auto; min-height:42px; }
