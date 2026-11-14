@@ -1,3 +1,4 @@
+import { edges, readEdge } from "../../editor/boxModel";
 import { beginGesture, advanceGesture, finishGesture, type GesturePhase } from "../../editor/gestureMachine";
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -136,13 +137,15 @@ export default function TransformControls({ block, rect, layerRef, zoom, onPatch
     surface.style.pointerEvents = "none";
     const underlying = document.elementFromPoint?.(event.clientX, event.clientY);
     surface.style.pointerEvents = "";
-    underlying?.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: event.clientX, clientY: event.clientY, shiftKey: event.shiftKey }));
+    underlying?.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: event.clientX, clientY: event.clientY, shiftKey: event.shiftKey, altKey:event.altKey }));
   };
   const styles = live || block.styles || {};
   const width = styles.width || (block.type === "image" && block.width ? `${block.width}px` : undefined);
+  const paddingEdges = edges.map(([side])=>readEdge(styles,"padding",side) || "0px");
+  const paddingLabel = paddingEdges.every(value=>value===paddingEdges[0]) ? describeLength(paddingEdges[0]) : paddingEdges.join(" / ");
   const measurements = <div className="ee-transform-measurements" role="status">
     <span>Ancho: {describeLength(width)} · Alto: {describeLength(styles.height)}</span>
-    <span>Margen: {["Top","Right","Bottom","Left"].map(side => styles[`margin${side}`] || styles.margin || "0").join(" / ")} · Interior: {describeLength(styles.padding || "0px")}</span>
+    <span>Margen: {["Top","Right","Bottom","Left"].map(side => styles[`margin${side}`] || styles.margin || "0").join(" / ")} · Interior: {paddingLabel}</span>
     {guide?.rect && <strong>{guide.label} · Alt para ignorar</strong>}
   </div>;
 

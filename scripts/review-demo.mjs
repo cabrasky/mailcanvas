@@ -17,6 +17,34 @@ try {
  const page=await browser.newPage({viewport:{width:1680,height:1100},locale:'es-ES'}); const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto(`http://127.0.0.1:${port}/`);await page.locator('.ee-email-page').waitFor();
  assert.equal(await page.getByLabel('Correo a editar').locator('option').count(),6);
+
+ if(process.argv.includes('--layers-only')) {
+   await page.getByRole('button',{name:'Probar funciones',exact:true}).click();
+   const dialog=page.getByRole('dialog',{name:'Prueba las funciones del editor'});
+   await dialog.getByRole('button',{name:'Archivos',exact:true}).click();
+   await dialog.getByLabel('Importar archivo de demo').setInputFiles({name:'layers.html',mimeType:'text/html',buffer:Buffer.from('<div class="grupo"><p>Hijo A</p></div><p>Hijo B</p>')});
+   await page.getByRole('tab',{name:'Capas',exact:true}).click();
+   const group=page.getByRole('treeitem',{name:'Grupo · grupo',exact:true});
+   const first=page.getByRole('treeitem',{name:'Texto · Hijo A',exact:true});
+   const second=page.getByRole('treeitem',{name:'Texto · Hijo B',exact:true});
+   await first.locator('.ee-layer-select').click();
+   const breadcrumbs=page.locator('.ee-workspace .ee-selection-path');
+   await breadcrumbs.getByRole('button',{name:'grupo',exact:true}).waitFor();
+   await breadcrumbs.getByRole('button',{name:'Hijo A',exact:true}).waitFor();
+   await breadcrumbs.getByRole('button',{name:'grupo',exact:true}).click();
+   assert.equal(await group.getAttribute('aria-selected'),'true');
+   await second.dragTo(group);
+   assert.equal(await second.getAttribute('aria-level'),'2');
+   await second.focus();await second.press('ArrowLeft');
+   assert.equal(await group.evaluate(el=>el===document.activeElement),true);
+   await group.locator('.ee-layer-select').click();
+   await page.getByRole('tab',{name:'Diseño',exact:true}).click();
+   await page.getByRole('button',{name:'Editar padding arriba',exact:true}).click();
+   await page.getByRole('spinbutton',{name:'Padding Arriba',exact:true}).fill('24');
+   await page.locator('.ee-workspace-tip').filter({hasText:'Interior: 24px / 0px / 0px / 0px'}).waitFor();
+   await page.screenshot({path:path.join(output,'22-capas-ruta-caja.png')});
+   assert.deepEqual(errors,[]);console.log('Nested layers, drag into parent, keyboard path and box diagram passed');await browser.close();server.kill();process.exit(0);
+ }
  if(process.argv.includes('--table-only')) {
    const table=page.locator('.ee-email-page [data-ee-block-kind="table"]').first();
    await table.locator('th').first().click();
@@ -24,6 +52,8 @@ try {
    await inspector.getByLabel('Nombre del nuevo campo').fill('extra');
    await inspector.getByRole('button',{name:'＋ Columna',exact:true}).click();
    await inspector.getByRole('button',{name:'Seleccionar columna extra',exact:true}).waitFor();
+   await inspector.getByRole('button',{name:'Seleccionar columna extra',exact:true}).dragTo(inspector.locator('thead th button').first());
+   assert.equal(await inspector.locator('thead th button').first().getAttribute('aria-label'),'Seleccionar columna extra');
    await inspector.getByRole('button',{name:'Filas',exact:true}).click();
    await inspector.getByRole('button',{name:'＋ Fila única',exact:true}).click();
    const groups=await inspector.locator('.ee-table-sources fieldset').count();
@@ -32,7 +62,7 @@ try {
    await inspector.getByRole('button',{name:'Resultado',exact:true}).click();
    await inspector.locator('tbody').getByText('STATIC-SKU',{exact:true}).waitFor();
    await page.screenshot({path:path.join(output,'21-tabla-fuentes-columna.png')});
-   console.log('Rewritten table column and mixed sources passed');await browser.close();server.kill();process.exit(0);
+   assert.deepEqual(errors,[]);console.log('Rewritten table column and mixed sources passed');await browser.close();server.kill();process.exit(0);
  }
 
  await page.getByLabel('Correo a editar').selectOption('summary');await page.getByText('Todavía no hay artículos',{exact:true}).waitFor();

@@ -19,6 +19,7 @@ Abre la dirección indicada por Vite. El servidor de desarrollo escucha en todas
 
 | Documento | Contenido |
 | --- | --- |
+| [Reescrituras por pasos](docs/REWRITE-STEPS.md) | Cinco cambios independientes, validaciones y capturas |
 | [Inventario técnico](docs/TECHNICAL-FEATURES.md) | Funciones y contratos de 1.0.3 antes de la reescritura |
 | [Comparación de la reescritura](docs/REWRITE-COMPARISON.md) | Arquitectura, pruebas, tamaños y diferencias visuales |
 | [Integración React](docs/REACT-COMPONENT.md) | Paquete instalable, props, estilos, React 18/19 y ejemplo de consumo |

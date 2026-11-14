@@ -1,5 +1,7 @@
 # Comparación de 1.0.3 con la reescritura
 
+Este informe conserva la medición de la primera reescritura, commit `8ad73a3`. Los cinco pasos posteriores se documentan en [Reescrituras por pasos](REWRITE-STEPS.md).
+
 Referencia anterior: commit `77f2ce5`, etiqueta `v1.0.3`, paquete público `mailcanvas@1.0.3`. Reescritura en `codex/editor-rewrite`.
 
 El [inventario técnico](TECHNICAL-FEATURES.md) se escribió antes de comenzar. Enumera las funciones que se han conservado como contrato de compatibilidad.

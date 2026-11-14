@@ -7,13 +7,18 @@ import { ColorInput,LengthInput } from "./StyleInputs";
 type Props={block:EmailBlock;onPatch:(patch:Partial<EmailBlock>)=>void};
 export default function DesignInspector({block,onPatch}:Props) {
   const styles=block.styles || {};
-  const change=(styles:Record<string,string>)=>onPatch({styles});
+  const change=(styles:Record<string,string>)=>onPatch(block.type === "table" ? {styles,width:styles.width ?? block.width} : {styles});
   const positional=(positionAlignedBlockTypes as readonly string[]).includes(block.type);
   const position=styles.marginLeft === "auto"?styles.marginRight === "auto"?"center":"right":"left";
   const align=(value:"left"|"center"|"right")=>change({...styles,...positionAlignStyles(value,block.type,styles.display)});
-  const sizing=block.type === "image" && block.width?{width:`${block.width}px`,...styles}:styles;
+  const sizing=block.type === "image" && block.width?{width:`${block.width}px`,...styles}:block.type === "table" && block.width?{width:block.width,...styles}:styles;
+  const resize=(next:Record<string,string>)=>{
+    if(block.type === "image")onPatch({styles:next,width:next.width?.endsWith("px")?next.width.slice(0,-2):next.width?block.width:""});
+    else if(block.type === "table")onPatch({styles:next,width:next.width || undefined});
+    else onPatch({styles:next});
+  };
   return <div className="ee-design-inspector">
-    <FrameSizing styles={sizing} onChange={next=>onPatch(block.type === "image"?{styles:next,width:next.width?.endsWith("px")?next.width.slice(0,-2):next.width?block.width:""}:{styles:next})}/>
+    <FrameSizing styles={sizing} onChange={resize}/>
     <LengthInput label="Ancho máximo" value={styles.maxWidth || ""} onChange={maxWidth=>change({...styles,maxWidth})} placeholder="600px"/>
     <fieldset className="ee-design-group"><legend>Posición del bloque</legend>
       <div className="ee-alignment-control" role="group" aria-label="Posición del bloque">

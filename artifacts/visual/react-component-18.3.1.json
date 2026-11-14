@@ -11,9 +11,9 @@
     "workers"
   ],
   "workers": [
-    "blob:http://127.0.0.1:5216/615a13ba-d9e6-451a-b979-245ae80c768e",
-    "blob:http://127.0.0.1:5216/9d9ad9a9-b3e1-4366-915b-317af8decd6b",
-    "blob:http://127.0.0.1:5216/7d74ca42-e359-44df-8006-021be7b34220"
+    "blob:http://127.0.0.1:5216/aa363668-e653-44e2-b666-b2dfef4bf517",
+    "blob:http://127.0.0.1:5216/26c7dac5-a9a3-4663-8f00-a6fb12baac14",
+    "blob:http://127.0.0.1:5216/013e4540-a2ad-43da-b487-3a6a6b401091"
   ],
   "errors": []
 }

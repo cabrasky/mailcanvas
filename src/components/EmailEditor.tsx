@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useRef } from "react";
 import type { CommonElements, EmailToken } from "../services/emailTemplateRenderer";
-import { findEmailBlock, moveEmailBlockAfter, moveEmailBlockBefore } from "../services/emailBlocks";
+import { findEmailBlock, moveEmailBlockToContainer, moveEmailBlockAfter, moveEmailBlockBefore } from "../services/emailBlocks";
 import { useEmailEditor } from "./email-editor/useEmailEditor";
 import { useEditorChrome } from "../editor/useEditorChrome";
 import EditorToolbar from "./editor/EditorToolbar";
@@ -78,7 +78,7 @@ export default function EmailEditor(props: EmailEditorProps) {
         </Suspense> : <div className="ee-build-area">
           <button className="ee-panel-toggle left" onClick={chrome.toggleLeft} aria-label={chrome.leftCollapsed ? "Mostrar panel izquierdo" : "Ocultar panel izquierdo"}>{chrome.leftCollapsed ? "›" : "‹"}</button>
           {!chrome.leftCollapsed && <>
-            <LeftPanel components={commonElements.components} onComponent={editor.createComponent} style={{ width: chrome.leftWidth }}
+            <LeftPanel onMoveInto={(id,parent)=>editor.publish(moveEmailBlockToContainer(editor.blocks,id,parent))} components={commonElements.components} onComponent={editor.createComponent} style={{ width: chrome.leftWidth }}
               tab={editor.leftTab} onTabChange={editor.setLeftTab} blocks={editor.blocks} selectedIds={editor.selectedIds} tokens={tokens}
               loopCollection={editor.selectedLoopCollection} onAdd={editor.create} onBeginPaletteDrag={editor.beginPaletteDrag}
               onVariable={editor.addVariable} onSelect={editor.onSelect} onSelectTableField={editor.onSelectTableField}

@@ -125,8 +125,8 @@ export default function BlockInspector({ style, block, multiCount, tokens, loopC
         </div>
       </details>
 
-      {block.type === "table" && tab !== "advanced" && <TableInspector key={block.id} block={block} onPatch={patch} tokens={tokens} mode={tab === "design" ? "design" : "content"} selectedField={selectedTableField} /> }
-      {tab === "design" && <DesignInspector key={block.id} block={block} onPatch={patch}/>}
+      {block.type === "table" && tab !== "advanced" && <TableInspector key={`table-${block.id}`} block={block} onPatch={patch} tokens={tokens} mode={tab === "design" ? "design" : "content"} selectedField={selectedTableField} /> }
+      {tab === "design" && <DesignInspector key={`design-${block.id}`} block={block} onPatch={patch}/>}
 
       <details className="ee-inspector-section" hidden={tab !== "advanced"}>
         <summary>Atributos HTML</summary>

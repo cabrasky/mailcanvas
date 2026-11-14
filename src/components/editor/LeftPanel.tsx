@@ -13,6 +13,7 @@ type Props = {
   onAdd: (kind: BlockKind) => void; onBeginPaletteDrag: (kind: BlockKind, clientX: number, clientY: number) => void; onVariable: (expression: string) => void;
   onSelect: (id: string, additive: boolean) => void; onSelectTableField: (id: string, field: string) => void;
   onMove: (id: string, delta: -1 | 1) => void; onDelete: (id: string) => void;
+  onMoveInto?: (movingId:string,parentId:string)=>void;
   onReorder: (movingId: string, targetId: string, after: boolean) => void; onContextMenu: (id: string, x: number, y: number) => void;
 };
 
@@ -23,7 +24,7 @@ export default function LeftPanel(props: Props) {
       <button role="tab" aria-selected={props.tab === "layers"} className={props.tab === "layers" ? "active" : ""} onClick={() => props.onTabChange("layers")}>Capas</button>
     </div>
     {props.tab === "layers"
-      ? <LayerPanel blocks={props.blocks} selectedIds={props.selectedIds} onSelect={props.onSelect} onSelectTableField={props.onSelectTableField}
+      ? <LayerPanel onMoveInto={props.onMoveInto} blocks={props.blocks} selectedIds={props.selectedIds} onSelect={props.onSelect} onSelectTableField={props.onSelectTableField}
         onMove={props.onMove} onDelete={props.onDelete} onReorder={props.onReorder} onContextMenu={props.onContextMenu} />
       : <BlockPalette components={props.components} onComponent={props.onComponent} tokens={props.tokens} loopCollection={props.loopCollection} onAdd={props.onAdd} onBeginDrag={props.onBeginPaletteDrag} onVariable={props.onVariable} />}
   </aside>;

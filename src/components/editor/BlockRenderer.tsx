@@ -131,7 +131,7 @@ function BlockNode({ block, locals, loopId }: { block: EmailBlock; locals: Recor
     "data-ee-block-kind": block.type,
     className: `ee-block ${selected ? "ee-block-selected" : ""} ${hovered ? "ee-block-hovered" : ""}`.trim(),
     style: isDragSource ? { opacity: 0.4 } : undefined,
-    onClick: (event: React.MouseEvent) => { event.stopPropagation(); ctx.onSelect(block.id, event.shiftKey); },
+    onClick: (event: React.MouseEvent) => { event.stopPropagation(); const parent = event.altKey ? event.currentTarget.parentElement?.closest<HTMLElement>("[data-ee-block-id]")?.dataset.eeBlockId : undefined; ctx.onSelect(parent || block.id, event.shiftKey); },
     onContextMenu: (event: React.MouseEvent) => { event.preventDefault(); event.stopPropagation(); ctx.onSelect(block.id, false); ctx.onContextMenu(block.id, event.clientX, event.clientY); },
     onMouseEnter: (event: React.MouseEvent) => { event.stopPropagation(); ctx.onHover(block.id); },
     onMouseLeave: () => ctx.onHover(null),

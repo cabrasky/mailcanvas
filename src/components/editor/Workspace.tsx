@@ -1,3 +1,4 @@
+import SelectionPath from "./SelectionPath";
 import { useCanvasViewport } from "../../editor/useCanvasViewport";
 import type { EmailBlock } from "../../services/emailBlocks";
 import type { EmailToken } from "../../services/emailTemplateRenderer";
@@ -74,6 +75,7 @@ export default function Workspace({
         </div>
       </div>
     </div>
+    <SelectionPath blocks={blocks} selectedIds={selectedIds} onSelect={onSelect} onClear={onClearSelection}/>
     <div ref={viewportRef} className={`ee-viewport ${spacePanning ? "panning" : ""}`}
       onPointerDownCapture={beginPan}
       onClick={() => onClearSelection()}>
