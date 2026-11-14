@@ -581,3 +581,6 @@
 .ee-frame-axis { display:grid; gap:8px; }
 .ee-frame-axis>label { display:grid; gap:6px; font-size:12px; }
 .ee-frame-sizing small { color:var(--text-faint); line-height:1.5; }
+.ee-transform-controls[data-gesture="aligning"] .ee-transform-drag-surface { cursor:grabbing; }
+.ee-transform-controls[data-gesture="resizing"] { outline:1px solid #a892ff; }
+.ee-transform-controls[data-gesture="pressed"] .ee-transform-drag-surface { cursor:grabbing; }

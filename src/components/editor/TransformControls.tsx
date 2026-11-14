@@ -1,3 +1,4 @@
+import { beginGesture, advanceGesture, finishGesture, type GesturePhase } from "../../editor/gestureMachine";
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { positionAlignStyles, type EmailBlock } from "../../services/emailBlocks";
@@ -21,6 +22,7 @@ const handles = [
 export default function TransformControls({ block, rect, layerRef, zoom, onPatch, onPreview, onBeginDrag, onContextMenu }: Props) {
   const session = usePointerSession();
   const moved = useRef(false);
+  const [phase,setPhase] = useState<GesturePhase | "idle">("idle");
   const [guide, setGuide] = useState<Guide | null>(null);
   const [live, setLive] = useState<Record<string,string> | null>(null);
   const [slot, setSlot] = useState<Element | null>(null);
@@ -51,7 +53,8 @@ export default function TransformControls({ block, rect, layerRef, zoom, onPatch
     const original = node.getAttribute("style");
     const siblings = Array.from(geometry.parent.children).filter(element => element !== node && element.hasAttribute("data-ee-block-id"));
     let patch: Partial<EmailBlock> | undefined;
-    let horizontal = false;
+    let gesture = beginGesture(action,startX,startY);
+    setPhase("pressed");
     moved.current = false;
     const snap = (value: number, axis: "width"|"height", disabled: boolean) => {
       const references = siblings.map(element => ({ value: element.getBoundingClientRect()[axis]/zoom, label: `Misma medida que ${element.textContent?.trim().slice(0,45) || element.getAttribute("data-ee-block-kind")}`, element }));
@@ -69,16 +72,16 @@ export default function TransformControls({ block, rect, layerRef, zoom, onPatch
       move: pointer => {
         const dx = (pointer.clientX-startX)/zoom;
         const dy = (pointer.clientY-startY)/zoom;
-        if (Math.hypot(dx,dy)*zoom < 3 && !patch) return;
+        const previous = gesture.phase;
+        gesture = advanceGesture(gesture,pointer.clientX,pointer.clientY);
+        if (gesture.phase === "pressed") return;
         moved.current = true;
-        if (action === "align" && !horizontal) {
-          if (Math.max(Math.abs(dx), Math.abs(dy))*zoom < 6) return;
-          if (Math.abs(dy) > Math.abs(dx)) {
-            cancel();
-            if (capture.hasPointerCapture(pointerId)) capture.releasePointerCapture(pointerId);
-            onBeginDrag(block.id, pointer.clientX, pointer.clientY); return;
-          }
-          horizontal = true;
+        if (gesture.phase !== previous) setPhase(gesture.phase);
+        if (gesture.phase === "reordering") {
+          cancel();
+          if (capture.hasPointerCapture(pointerId)) capture.releasePointerCapture(pointerId);
+          onBeginDrag(block.id,pointer.clientX,pointer.clientY);
+          return;
         }
         if (action === "resize") {
           const vertical = handle === "n" || handle === "s";
@@ -116,6 +119,8 @@ export default function TransformControls({ block, rect, layerRef, zoom, onPatch
         onPreview();
       },
       finish: commit => {
+        gesture = finishGesture(gesture,commit);
+        setPhase("idle");
         if (original === null) node.removeAttribute("style"); else node.setAttribute("style", original);
         setLive(null); setGuide(null);
         if (commit && patch) onPatch(patch);
@@ -141,7 +146,7 @@ export default function TransformControls({ block, rect, layerRef, zoom, onPatch
     {guide?.rect && <strong>{guide.label} · Alt para ignorar</strong>}
   </div>;
 
-  return <div className="ee-transform-controls" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }} onClick={event => event.stopPropagation()}>
+  return <div className="ee-transform-controls" data-gesture={phase} style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }} onClick={event => event.stopPropagation()}>
     {margins.map((size,index) => size > 0 && <div key={index} className="ee-transform-margin" style={[
       { left: 0, top: -size, width: "100%", height: size }, { left: "100%", top: 0, width: size, height: "100%" },
       { left: 0, top: "100%", width: "100%", height: size }, { left: -size, top: 0, width: size, height: "100%" },
